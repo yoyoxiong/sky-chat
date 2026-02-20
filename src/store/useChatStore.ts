@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
 import { fetchStream } from "@/lib/stream"; // 导入我们封装的流式工具
+import { generateChatTitle } from "@/app/api/chat";
 
 interface ChatStore {
   conversations: Conversation[];
@@ -132,11 +133,10 @@ export const useChatStore = create<ChatStore>()(
 
         // 3. 创建用户消息：content只存用户的纯提问，fileAttachments存文件元数据
         // 🔧 核心：把用户输入的提问从完整Prompt里提取出来，只存到消息里
-        const userInput = content.split("\n\n用户的问题：")[1] || content;
         const userMessage: Message = {
           id: Date.now().toString(),
           role: "user",
-          content: userInput, // 只存用户的提问，不存文件内容
+          content: userPureInput, // 只存用户的提问，不存文件内容
           timestamp: new Date(),
           fileAttachments:
             fileAttachments.length > 0 ? fileAttachments : undefined, // 存文件元数据
@@ -169,11 +169,7 @@ export const useChatStore = create<ChatStore>()(
           (async () => {
             try {
               // 调用你写好的生成标题API，只用用户的纯提问生成
-              const res = await fetch("/api/generate-title", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMessage: userPureInput }),
-              });
+              const res = await generateChatTitle(userPureInput);
               const { title } = await res.json();
               // 如果AI生成了有效标题，就更新会话标题
               if (title) {

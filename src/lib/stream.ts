@@ -1,4 +1,3 @@
-// src/lib/stream.ts
 /**
  * 流式请求工具函数（支持取消）
  * @param url 请求地址
@@ -7,6 +6,7 @@
  * @param onComplete 流结束/取消时的回调
  * @param onStop 外部传入的「停止函数」的赋值回调（关键！）
  */
+import { fetchChatStream } from "@/app/api/chat";
 export async function fetchStream(
   url: string,
   body: Record<string, any>,
@@ -28,13 +28,7 @@ export async function fetchStream(
   }
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const response = await fetchChatStream(body);
 
     if (!response.ok || !response.body) {
       throw new Error("请求失败");

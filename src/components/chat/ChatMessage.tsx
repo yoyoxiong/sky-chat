@@ -142,6 +142,26 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     </a>
                   ),
                 }}
+                // 新增：只允许渲染安全的标签，禁止script、iframe等危险标签
+                allowedElements={[
+                  "p",
+                  "h1",
+                  "h2",
+                  "h3",
+                  "h4",
+                  "ul",
+                  "ol",
+                  "li",
+                  "code",
+                  "pre",
+                  "a",
+                  "blockquote",
+                  "strong",
+                  "em",
+                  "br",
+                ]}
+                // 不允许的标签，直接拆掉，只保留里面的文本
+                unwrapDisallowed={true}
               >
                 {message.content}
               </ReactMarkdown>
