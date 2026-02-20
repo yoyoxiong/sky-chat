@@ -1,7 +1,7 @@
 // src/store/useChatStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Conversation, Message } from "./types";
+import { Conversation, Message, FileMeta } from "./types";
 import { fetchStream } from "@/lib/stream"; // 导入我们封装的流式工具
 
 interface ChatStore {
@@ -96,38 +96,50 @@ export const useChatStore = create<ChatStore>()(
       },
 
       // 核心：发送消息 + 流式获取AI回复
-      sendMessage: async (content: string) => {
+      // 只需要修改sendMessage函数的定义和实现，其他代码完全不动
+      sendMessage: async (
+        content: string,
+        fileAttachments: FileMeta[] = [],
+      ) => {
         const state = get();
-
-        // 发送新消息前，先停止上一次的生成（避免多个流同时运行）
+        // 发送新消息前，先停止上一次的生成
         if (state.currentStopFn) {
           state.stopGenerating();
         }
-
         // 1. 没有选中会话时自动创建
         if (!state.activeConversationId) {
           state.createNewConversation();
           const newState = get();
           if (!newState.activeConversationId) return;
         }
-
         const currentState = get();
         const currentConv = currentState.conversations.find(
           (c) => c.id === currentState.activeConversationId,
         );
-
         if (!currentConv) return;
 
-        // 2. 第一条消息自动更新会话标题
-        // 2. 判断是不是第一句话（触发自动生成标题的条件）
+        // 从完整Prompt里提取用户的纯提问，只用这个生成标题
+        const userPureInput = content.split("\n\n用户的问题：")[1] || content;
+        // 判断是不是第一句话（触发自动生成标题的条件）
         const isFirstMessage = currentConv.messages.length === 0;
 
-        // 3. 创建用户消息
+        // 先给临时标题，保证UI立刻有反馈，兜底逻辑保留
+        const tempTitle = isFirstMessage
+          ? userPureInput.length > 10
+            ? userPureInput.substring(0, 10) + "..."
+            : userPureInput
+          : currentConv.title;
+
+        // 3. 创建用户消息：content只存用户的纯提问，fileAttachments存文件元数据
+        // 🔧 核心：把用户输入的提问从完整Prompt里提取出来，只存到消息里
+        const userInput = content.split("\n\n用户的问题：")[1] || content;
         const userMessage: Message = {
           id: Date.now().toString(),
           role: "user",
-          content: content,
+          content: userInput, // 只存用户的提问，不存文件内容
           timestamp: new Date(),
+          fileAttachments:
+            fileAttachments.length > 0 ? fileAttachments : undefined, // 存文件元数据
         };
 
         // 4. 创建AI空消息占位，标记为正在生成
@@ -135,7 +147,7 @@ export const useChatStore = create<ChatStore>()(
         const aiMessage: Message = {
           id: aiMessageId,
           role: "assistant",
-          content: "", // 初始为空
+          content: "",
           timestamp: new Date(),
           isStreaming: true,
         };
@@ -146,28 +158,21 @@ export const useChatStore = create<ChatStore>()(
             if (conv.id === state.activeConversationId) {
               return {
                 ...conv,
-                // 先保留原来的临时标题，等AI生成完再替换
-                title: isFirstMessage
-                  ? content.length > 10
-                    ? content.substring(0, 10) + "..."
-                    : content
-                  : conv.title,
+                title: tempTitle,
                 messages: [...conv.messages, userMessage, aiMessage],
               };
             }
             return conv;
           }),
         }));
-
-        // 👇 新增：如果是第一句话，异步生成标题，不阻塞主聊天流
         if (isFirstMessage) {
           (async () => {
             try {
-              // 调用我们刚写的生成标题API
+              // 调用你写好的生成标题API，只用用户的纯提问生成
               const res = await fetch("/api/generate-title", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMessage: content }),
+                body: JSON.stringify({ userMessage: userPureInput }),
               });
               const { title } = await res.json();
               // 如果AI生成了有效标题，就更新会话标题
@@ -181,17 +186,17 @@ export const useChatStore = create<ChatStore>()(
                   }),
                 }));
               }
-              // 生成失败的话，就保留原来的截取标题，不用额外处理
+              // 生成失败的话，就保留之前的临时截取标题，兜底逻辑生效
             } catch (err) {
               console.error("自动生成标题失败", err);
-              // 出错不影响主功能，走兜底逻辑
+              // 出错不影响主功能，自动走兜底的临时标题
             }
           })();
         }
 
-        // 6. 调用流式请求，获取AI回复
+        // 6. 原来的流式请求逻辑完全不动，用完整的content（带文件内容）调用AI
         await fetchStream(
-          "/api/stream", // 我们写的模拟接口地址
+          "/api/stream",
           {
             messages: currentConv.messages
               .map((m) => ({
@@ -200,9 +205,9 @@ export const useChatStore = create<ChatStore>()(
               }))
               .concat({
                 role: "user",
-                content: content,
+                content: content, // 给AI发完整的带文件内容的Prompt
               }),
-          }, // 把用户的问题和之前的消息传给后端
+          },
           // 每收到一段数据，就追加到AI消息里
           (chunk) => {
             set((state) => ({
@@ -248,7 +253,7 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 👉 关键：把停止函数保存到Store里
+          // 把停止函数保存到Store里
           (stopFn) => {
             set({ currentStopFn: stopFn });
           },
