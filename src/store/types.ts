@@ -7,6 +7,9 @@ export interface Message {
   isStreaming?: boolean; // 标记是否正在流式生成
   // 上传的文件附件元数据
   fileAttachments?: FileMeta[];
+  imageUrl?: string; // 生成的图片地址
+  isGeneratingImage?: boolean; // 标记是否正在生成图片
+  generateImageError?: string; // 图片生成失败的错误信息
 }
 
 // 定义单个会话的类型

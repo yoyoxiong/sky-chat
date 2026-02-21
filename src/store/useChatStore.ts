@@ -10,13 +10,13 @@ interface ChatStore {
   activeConversationId: string | null;
   currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
 
-  // 原有方法
   createNewConversation: () => void;
   setActiveConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
-  sendMessage: (content: string) => Promise<void>; // 改成异步函数
+  sendMessage: (content: string, fileAttachments: FileMeta[]) => Promise<void>; // 改成异步函数
   stopGenerating: () => void; // 新增：停止生成的方法
   renameConversation: (id: string, newTitle: string) => void; // 新增：重命名方法
+  generateImage: (prompt: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -25,6 +25,7 @@ export const useChatStore = create<ChatStore>()(
       conversations: [],
       activeConversationId: null,
       currentStopFn: null, // 初始为null
+      isRecognizingIntent: false,
 
       createNewConversation: () => {
         const newId = Date.now().toString();
@@ -255,6 +256,147 @@ export const useChatStore = create<ChatStore>()(
           },
         );
       },
+      // 👇 新增：文生图核心方法
+      generateImage: async (prompt: string) => {
+        const state = get();
+        // 1. 没有选中会话时自动新建，和聊天逻辑一致
+        if (!state.activeConversationId) {
+          state.createNewConversation();
+          const newState = get();
+          if (!newState.activeConversationId) return;
+        }
+        const currentState = get();
+        const currentConv = currentState.conversations.find(
+          (c) => c.id === currentState.activeConversationId,
+        );
+        if (!currentConv) return;
+
+        // 2. 第一条消息自动生成标题，和聊天逻辑一致
+        const isFirstMessage = currentConv.messages.length === 0;
+        const tempTitle = isFirstMessage
+          ? prompt.length > 10
+            ? prompt.substring(0, 10) + "..."
+            : prompt
+          : currentConv.title;
+
+        // 3. 创建用户的提示词消息
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          role: "user",
+          content: prompt,
+          timestamp: new Date(),
+        };
+
+        // 4. 创建AI的图片占位消息，标记正在生成
+        const aiImageMessageId = (Date.now() + 1).toString();
+        const aiImageMessage: Message = {
+          id: aiImageMessageId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+          isGeneratingImage: true, // 标记正在生成图片
+        };
+
+        // 5. 先把两条消息更新到store，UI立刻显示，给用户即时反馈
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id === state.activeConversationId) {
+              return {
+                ...conv,
+                title: tempTitle,
+                messages: [...conv.messages, userMessage, aiImageMessage],
+              };
+            }
+            return conv;
+          }),
+        }));
+
+        try {
+          // 6. 调用我们自己写的后端文生图接口
+          const res = await fetch("/api/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt }),
+          });
+
+          const result = await res.json();
+
+          // 7. 生成失败，更新错误状态
+          if (!res.ok || !result.imageUrl) {
+            set((state) => ({
+              conversations: state.conversations.map((conv) => {
+                if (conv.id === state.activeConversationId) {
+                  return {
+                    ...conv,
+                    messages: conv.messages.map((msg) => {
+                      if (msg.id === aiImageMessageId) {
+                        return {
+                          ...msg,
+                          isGeneratingImage: false,
+                          generateImageError:
+                            result.error || "图片生成失败，请重试",
+                          content:
+                            "抱歉，图片生成失败了，你可以换个提示词重试~",
+                        };
+                      }
+                      return msg;
+                    }),
+                  };
+                }
+                return conv;
+              }),
+            }));
+            return;
+          }
+
+          // 8. 生成成功，更新图片地址到消息里
+          set((state) => ({
+            conversations: state.conversations.map((conv) => {
+              if (conv.id === state.activeConversationId) {
+                return {
+                  ...conv,
+                  messages: conv.messages.map((msg) => {
+                    if (msg.id === aiImageMessageId) {
+                      return {
+                        ...msg,
+                        isGeneratingImage: false,
+                        imageUrl: result.imageUrl,
+                        content: "图片生成完成，你可以点击图片查看大图~",
+                      };
+                    }
+                    return msg;
+                  }),
+                };
+              }
+              return conv;
+            }),
+          }));
+        } catch (error: any) {
+          // 9. 网络错误兜底
+          set((state) => ({
+            conversations: state.conversations.map((conv) => {
+              if (conv.id === state.activeConversationId) {
+                return {
+                  ...conv,
+                  messages: conv.messages.map((msg) => {
+                    if (msg.id === aiImageMessageId) {
+                      return {
+                        ...msg,
+                        isGeneratingImage: false,
+                        generateImageError: error.message || "网络错误，请重试",
+                        content: "抱歉，网络出问题了，图片生成失败了~",
+                      };
+                    }
+                    return msg;
+                  }),
+                };
+              }
+              return conv;
+            }),
+          }));
+        }
+      },
+      // 👇 核心：统一发送方法，自动判断意图，解决回车键尴尬
     }),
     {
       // 1. localStorage 的键名

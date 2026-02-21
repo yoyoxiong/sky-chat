@@ -4,34 +4,41 @@
 import { useState, useRef, useEffect, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { SelectedFile, FileMeta } from "@/store/types";
+import type { FileMeta } from "@/store/types";
+import { useChatStore } from "@/store/useChatStore";
 import {
   SendIcon,
   CircleStopIcon,
   PaperclipIcon,
   XIcon,
   FileTextIcon,
+  ImageIcon,
 } from "lucide-react";
 import { useFileUpload, ALLOWED_FILE_EXTENSIONS } from "@/hooks/useFileUpload";
+import { Loader2 } from "lucide-react";
 
 interface ChatInputProps {
-  onSendMessage: (content: string, files: FileMeta[]) => void;
   disabled?: boolean;
   onStopGenerating?: () => void;
   isGenerating?: boolean;
+  onSendMessage?: (
+    content: string,
+    fileAttachments: FileMeta[],
+  ) => Promise<void>;
 }
 
 export function ChatInput({
-  onSendMessage,
   disabled = false,
   onStopGenerating,
   isGenerating = false,
+  onSendMessage,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
-  // 组件里只需要这一行，所有文件逻辑都封装好了
+  const { generateImage } = useChatStore();
+  const [mode, setMode] = useState<"chat" | "draw">("chat");
   const {
     selectedFiles,
     handleFileSelect,
@@ -45,10 +52,14 @@ export function ChatInput({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
+  const handleGenerateImage = () => {
+    if (!input.trim()) return;
+    generateImage(input);
+    setInput("");
+  };
   // 发送消息核心逻辑
   const handleSend = () => {
-    if (!input.trim() && selectedFiles.length === 0) return;
+    if ((!input.trim() && selectedFiles.length === 0) || isGenerating) return;
 
     // 拼接完整Prompt
     let finalContent = input.trim();
@@ -58,7 +69,11 @@ export function ChatInput({
     }
 
     // 调用发送方法
-    onSendMessage(finalContent, getFileMeta());
+    if (mode === "draw") {
+      handleGenerateImage();
+    } else {
+      onSendMessage?.(finalContent, getFileMeta());
+    }
     // 清空状态
     setInput("");
     clearFiles();
@@ -77,6 +92,22 @@ export function ChatInput({
       {/* 🔧 核心：外层容器固定最大宽度，不会被内容撑开，布局完全锁死 */}
       <div className="mx-auto max-w-3xl w-full">
         {/* 选中的文件列表：和豆包一致，在输入框上方平铺，不会挤压输入框 */}
+        <div className="flex mb-2 rounded-md bg-accent/30 p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => setMode("chat")}
+            className={`px-3 py-1 rounded-md text-sm transition-all ${mode === "chat" ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}
+          >
+            聊天模式
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("draw")}
+            className={`px-3 py-1 rounded-md text-sm transition-all ${mode === "draw" ? "bg-background shadow-sm font-medium" : "text-muted-foreground"}`}
+          >
+            画图模式
+          </button>
+        </div>
         {selectedFiles.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2 w-full overflow-hidden">
             {selectedFiles.map((file) => (
@@ -131,11 +162,11 @@ export function ChatInput({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              selectedFiles.length > 0
-                ? "输入你的问题，AI会基于文件内容回答..."
-                : "输入消息..."
+              isGenerating
+                ? "AI正在生成中..."
+                : "输入消息，或者输入画图需求，按回车发送..."
             }
-            disabled={disabled}
+            disabled={disabled || isGenerating}
             className="flex-1 min-h-[44px] md:min-h-[40px] text-sm w-full"
           />
 

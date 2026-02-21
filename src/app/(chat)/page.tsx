@@ -71,10 +71,10 @@ export default function ChatPage() {
       {/* 底部：输入框，shrink-0固定不收缩，永远在底部 */}
       <div className="shrink-0">
         <ChatInput
-          onSendMessage={sendMessage}
           disabled={isStreaming}
           isGenerating={isStreaming}
           onStopGenerating={stopGenerating}
+          onSendMessage={sendMessage}
         />
       </div>
     </div>

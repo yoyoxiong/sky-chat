@@ -2,11 +2,19 @@
 import { cn } from "@/lib/utils"; // Shadcn 自带的工具函数，用来合并类名
 import type { Message } from "@/store/types";
 // 把FileTextIcon加到导入里
-import { User, Bot, Copy, Check, FileTextIcon } from "lucide-react";
 import { useState } from "react"; // 用来管理复制状态
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  User,
+  Bot,
+  Copy,
+  Check,
+  FileTextIcon,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -78,6 +86,40 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 "prose prose-xs md:prose-sm dark:prose-invert max-w-none",
               )}
             >
+              {/* 👇 新增：图片生成中，加载动画 */}
+              {message.isGeneratingImage && (
+                <div className="flex items-center gap-2 py-4 justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                  <span>正在生成图片，请稍候...</span>
+                </div>
+              )}
+
+              {/* 👇 新增：图片生成失败，错误提示 */}
+              {message.generateImageError && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 mb-3">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{message.generateImageError}</span>
+                </div>
+              )}
+
+              {/* 👇 新增：渲染生成的图片 */}
+              {message.imageUrl && !message.isGeneratingImage && (
+                <div className="my-3 w-full overflow-hidden rounded-md border border-border">
+                  <a
+                    href={message.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <img
+                      src={message.imageUrl}
+                      alt={message.content}
+                      className="w-full h-auto object-cover rounded-md hover:opacity-90 transition-opacity"
+                      loading="lazy"
+                    />
+                  </a>
+                </div>
+              )}
               {/* ReactMarkdown部分完全不动 */}
               <ReactMarkdown
                 components={{
