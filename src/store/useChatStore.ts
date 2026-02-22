@@ -10,6 +10,8 @@ interface ChatStore {
   activeConversationId: string | null;
   currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
 
+  regenerateMessage: (messageId: string) => Promise<void>; // 重新生成
+  deleteMessage: (messageId: string) => Promise<void>; // 删除消息
   createNewConversation: () => void;
   setActiveConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
@@ -395,6 +397,151 @@ export const useChatStore = create<ChatStore>()(
             }),
           }));
         }
+      },
+      // 👇 新增1：重新生成AI回复
+      regenerateMessage: async (messageId: string) => {
+        const state = get();
+        // 边界判断
+        if (!state.activeConversationId || state.currentStopFn) return;
+        const currentConv = state.conversations.find(
+          (c) => c.id === state.activeConversationId,
+        );
+        if (!currentConv) return;
+
+        // 1. 找到要重新生成的AI消息，以及它对应的上一条用户提问
+        const messageIndex = currentConv.messages.findIndex(
+          (msg) => msg.id === messageId,
+        );
+        if (messageIndex < 1) return; // 第一条消息不可能是AI回复，直接返回
+        const targetAiMessage = currentConv.messages[messageIndex];
+        const targetUserMessage = currentConv.messages[messageIndex - 1];
+
+        // 只允许重新生成AI的回复，用户消息不能重新生成
+        if (
+          targetAiMessage.role !== "assistant" ||
+          targetUserMessage.role !== "user"
+        )
+          return;
+
+        // 2. 先删除原来的AI消息，创建新的占位消息
+        const newAiMessageId = Date.now().toString();
+        const newAiMessage: Message = {
+          id: newAiMessageId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+          isStreaming: true,
+        };
+
+        // 3. 更新store：删掉旧的AI消息，加入新的占位消息
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id === state.activeConversationId) {
+              const newMessages = [...conv.messages];
+              newMessages.splice(messageIndex, 1, newAiMessage); // 替换旧的AI消息
+              return { ...conv, messages: newMessages };
+            }
+            return conv;
+          }),
+        }));
+
+        // 4. 复用你现有的流式请求逻辑，重新发送用户的提问
+        await fetchStream(
+          "/api/stream",
+          {
+            messages: currentConv.messages
+              .slice(0, messageIndex - 1) // 取这条消息之前的所有对话历史
+              .map((m) => ({ role: m.role, content: m.content }))
+              .concat({ role: "user", content: targetUserMessage.content }), // 重新发送用户的提问
+          },
+          // 流式更新内容
+          (chunk) => {
+            set((state) => ({
+              conversations: state.conversations.map((conv) => {
+                if (conv.id === state.activeConversationId) {
+                  return {
+                    ...conv,
+                    messages: conv.messages.map((msg) => {
+                      if (msg.id === newAiMessageId) {
+                        return { ...msg, content: msg.content + chunk };
+                      }
+                      return msg;
+                    }),
+                  };
+                }
+                return conv;
+              }),
+            }));
+          },
+          // 流结束收尾
+          () => {
+            set((state) => ({
+              currentStopFn: null,
+              conversations: state.conversations.map((conv) => {
+                if (conv.id === state.activeConversationId) {
+                  return {
+                    ...conv,
+                    messages: conv.messages.map((msg) => {
+                      if (msg.id === newAiMessageId) {
+                        return { ...msg, isStreaming: false };
+                      }
+                      return msg;
+                    }),
+                  };
+                }
+                return conv;
+              }),
+            }));
+          },
+          // 保存停止函数
+          (stopFn) => set({ currentStopFn: stopFn }),
+        );
+      },
+
+      // 👇 新增2：删除单条消息（同时删除对应的问答对，符合主流交互）
+      deleteMessage: async (messageId: string) => {
+        const state = get();
+        if (!state.activeConversationId) return;
+        const currentConv = state.conversations.find(
+          (c) => c.id === state.activeConversationId,
+        );
+        if (!currentConv) return;
+
+        const messageIndex = currentConv.messages.findIndex(
+          (msg) => msg.id === messageId,
+        );
+        if (messageIndex === -1) return;
+
+        const targetMessage = currentConv.messages[messageIndex];
+        const messagesToDelete = [messageIndex];
+
+        // 如果是AI回复，同时删除它对应的上一条用户提问
+        if (targetMessage.role === "assistant" && messageIndex > 0) {
+          messagesToDelete.push(messageIndex - 1);
+        }
+        // 如果是用户提问，同时删除它对应的下一条AI回复
+        if (
+          targetMessage.role === "user" &&
+          messageIndex < currentConv.messages.length - 1
+        ) {
+          messagesToDelete.push(messageIndex + 1);
+        }
+
+        // 去重+倒序删除，避免索引错乱
+        const uniqueIndexes = [...new Set(messagesToDelete)].sort(
+          (a, b) => b - a,
+        );
+
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id === state.activeConversationId) {
+              const newMessages = [...conv.messages];
+              uniqueIndexes.forEach((index) => newMessages.splice(index, 1));
+              return { ...conv, messages: newMessages };
+            }
+            return conv;
+          }),
+        }));
       },
       // 👇 核心：统一发送方法，自动判断意图，解决回车键尴尬
     }),
