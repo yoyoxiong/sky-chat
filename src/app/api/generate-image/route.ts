@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         input: { prompt: prompt.trim() },
         parameters: {
           style: "<photography>",
-          size: "768*768",
+          size: "720*1280",
           n: 1,
           steps: 15,
         },

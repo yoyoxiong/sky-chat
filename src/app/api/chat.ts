@@ -14,7 +14,7 @@ export const generateChatTitle = async (userMessage: string) => {
     body: JSON.stringify({ userMessage }),
   });
   if (!res.ok) throw new Error("生成标题失败");
-  return res.json();
+  return res;
 };
 
 /**
