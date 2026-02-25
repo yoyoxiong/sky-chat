@@ -3,6 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import type { Components, CodeComponentProps } from "react-markdown";
 import { cn } from "@/lib/utils";
 // 1. 导入需要的依赖
 import { useState } from "react";
@@ -17,7 +18,6 @@ interface MarkdownRendererProps {
 function CodeBlock({
   language,
   children,
-  isUser,
 }: {
   language?: string;
   children: string;
@@ -69,7 +69,7 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
     <ReactMarkdown
       components={{
         // 3. 在 components 里引用我们抽出来的 CodeBlock 组件
-        code: ({ inline, className, children, ...props }: any) => {
+        code: ({ inline, className, children, ...props }: CodeComponentProps) => {
           const match = /language-(\w+)/.exec(className || "");
           // 区分行内代码和代码块
           if (!inline && match) {
@@ -111,19 +111,29 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
             {children}
           </ol>
         ),
-        a: ({ children, href }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "underline break-all",
-              isUser ? "text-blue-100" : "text-blue-600 dark:text-blue-400",
-            )}
-          >
-            {children}
-          </a>
-        ),
+        a: ({ children, href }) => {
+          // 只允许http/https开头的合法链接，禁止所有伪协议
+          const isSafeHref =
+            href?.startsWith("http://") || href?.startsWith("https://");
+          // 不安全的链接，直接渲染成纯文本，不生成可点击的a标签
+          if (!isSafeHref) {
+            return <span className="text-muted-foreground">{children}</span>;
+          }
+          // 合法链接，正常渲染
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "underline break-all",
+                isUser ? "text-blue-100" : "text-blue-600 dark:text-blue-400",
+              )}
+            >
+              {children}
+            </a>
+          );
+        },
       }}
       allowedElements={[
         "p",
@@ -143,6 +153,7 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
         "br",
       ]}
       unwrapDisallowed={true}
+      skipHtml={true} // 彻底禁用用户输入的原生HTML，只渲染Markdown
     >
       {content}
     </ReactMarkdown>

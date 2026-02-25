@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const taskRes = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,//身份验证
         "Content-Type": "application/json",
         "X-DashScope-Async": "enable", // 保留异步模式
       },
@@ -33,10 +33,10 @@ export async function POST(req: Request) {
         model: "wanx-v1",
         input: { prompt: prompt.trim() },
         parameters: {
-          style: "<photography>",
-          size: "720*1280",
-          n: 1,
-          steps: 15,
+          style: "<photography>",//图片风格
+          size: "720*1280",//图片大小
+          n: 1,//单次生成图片张数
+          steps: 15,//迭代步数(图片打磨次数)次数越多越精致
         },
       }),
     });

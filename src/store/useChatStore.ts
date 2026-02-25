@@ -110,18 +110,12 @@ export const useChatStore = create<ChatStore>()(
         if (state.currentStopFn) {
           state.stopGenerating();
         }
-        // 1. 没有选中会话时自动创建
-        if (!state.activeConversationId) {
-          state.createNewConversation();
-          const newState = get();
-          if (!newState.activeConversationId) return;
-        }
+
         const currentState = get();
         const currentConv = currentState.conversations.find(
           (c) => c.id === currentState.activeConversationId,
         );
         if (!currentConv) return;
-
         // 从完整Prompt里提取用户的纯提问，只用这个生成标题
         const userPureInput = content.split("\n\n用户的问题：")[1] || content;
         // 判断是不是第一句话（触发自动生成标题的条件）
@@ -129,8 +123,8 @@ export const useChatStore = create<ChatStore>()(
 
         // 先给临时标题，保证UI立刻有反馈，兜底逻辑保留
         const tempTitle = isFirstMessage
-          ? userPureInput.length > 10
-            ? userPureInput.substring(0, 10) + "..."
+          ? userPureInput.length > 20
+            ? userPureInput.substring(0, 20) + "..."
             : userPureInput
           : currentConv.title;
 
@@ -198,10 +192,12 @@ export const useChatStore = create<ChatStore>()(
           "/api/stream",
           {
             messages: currentConv.messages
+              //得到一个只包含{role,content}的消息数组
               .map((m) => ({
                 role: m.role,
                 content: m.content,
               }))
+              //在消息数组末尾增加一条刚发送的用户信息
               .concat({
                 role: "user",
                 content: content, // 给AI发完整的带文件内容的Prompt
@@ -260,13 +256,13 @@ export const useChatStore = create<ChatStore>()(
       },
       // 👇 新增：文生图核心方法
       generateImage: async (prompt: string) => {
-        const state = get();
-        // 1. 没有选中会话时自动新建，和聊天逻辑一致
-        if (!state.activeConversationId) {
-          state.createNewConversation();
-          const newState = get();
-          if (!newState.activeConversationId) return;
-        }
+        //const state = get();
+        //1. 没有选中会话时自动新建，和聊天逻辑一致
+        // if (!state.activeConversationId) {
+        //   state.createNewConversation();
+        //   const newState = get();
+        //   if (!newState.activeConversationId) return;
+        // }
         const currentState = get();
         const currentConv = currentState.conversations.find(
           (c) => c.id === currentState.activeConversationId,
@@ -276,8 +272,8 @@ export const useChatStore = create<ChatStore>()(
         // 2. 第一条消息自动生成标题，和聊天逻辑一致
         const isFirstMessage = currentConv.messages.length === 0;
         const tempTitle = isFirstMessage
-          ? prompt.length > 10
-            ? prompt.substring(0, 10) + "..."
+          ? prompt.length > 20
+            ? prompt.substring(0, 20) + "..."
             : prompt
           : currentConv.title;
 
@@ -312,6 +308,30 @@ export const useChatStore = create<ChatStore>()(
             return conv;
           }),
         }));
+        if (isFirstMessage) {
+          (async () => {
+            try {
+              // 调用你写好的生成标题API，只用用户的纯提问生成
+              const res = await generateChatTitle(prompt);
+              const { title } = await res.json();
+              // 如果AI生成了有效标题，就更新会话标题
+              if (title) {
+                set((state) => ({
+                  conversations: state.conversations.map((conv) => {
+                    if (conv.id === state.activeConversationId) {
+                      return { ...conv, title };
+                    }
+                    return conv;
+                  }),
+                }));
+              }
+              // 生成失败的话，就保留之前的临时截取标题，兜底逻辑生效
+            } catch (err) {
+              console.error("自动生成标题失败", err);
+              // 出错不影响主功能，自动走兜底的临时标题
+            }
+          })();
+        }
 
         try {
           // 6. 调用我们自己写的后端文生图接口
@@ -373,7 +393,11 @@ export const useChatStore = create<ChatStore>()(
               return conv;
             }),
           }));
-        } catch (error: any) {
+        } catch (error: unknown) {
+          // 先判断 error 是不是 Error 类型
+  const errorMessage = error instanceof Error 
+    ? error.message 
+    : "网络错误，请重试";
           // 9. 网络错误兜底
           set((state) => ({
             conversations: state.conversations.map((conv) => {
@@ -385,7 +409,7 @@ export const useChatStore = create<ChatStore>()(
                       return {
                         ...msg,
                         isGeneratingImage: false,
-                        generateImageError: error.message || "网络错误，请重试",
+                        generateImageError: errorMessage,
                         content: "抱歉，网络出问题了，图片生成失败了~",
                       };
                     }
