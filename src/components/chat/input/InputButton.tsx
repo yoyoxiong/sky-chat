@@ -1,7 +1,8 @@
 import { SendIcon, CircleStopIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SelectedFile } from "@/store/types";
-interface InputStopButtonProps {
+
+interface InputButtonProps {
   isGenerating?: boolean;
   onStopGenerating?: () => void;
   handleSend: () => void;
@@ -9,32 +10,32 @@ interface InputStopButtonProps {
   selectedFiles: SelectedFile[];
 }
 
-export function InputStopButton({
+export function InputButton({
   isGenerating,
   onStopGenerating,
   handleSend,
   input,
   selectedFiles,
-}: InputStopButtonProps) {
+}: InputButtonProps) {
   return isGenerating ? (
+    // ✅ 停止生成按钮：圆形、红色、只有停止图标
     <Button
       type="button"
       onClick={onStopGenerating}
       variant="destructive"
-      className="gap-2 h-[44px] px-4 shrink-0"
+      className="h-10 w-10 rounded-full p-0 shrink-0 shadow-md hover:shadow-lg transition-all"
     >
-      <CircleStopIcon className="h-4 w-4" />
-      <span className="hidden sm:inline">停止</span>
+      <CircleStopIcon className="h-5 w-5" />
     </Button>
   ) : (
+    // ✅ 发送按钮：圆形、品牌蓝、只有纸飞机图标
     <Button
       type="submit"
       onClick={handleSend}
       disabled={!input.trim() && selectedFiles.length === 0}
-      className="gap-2 h-[44px] px-4 shrink-0"
+      className="h-10 w-10 rounded-full p-0 shrink-0 shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:shadow-none"
     >
-      <SendIcon className="h-4 w-4" />
-      <span className="hidden sm:inline">发送</span>
+      <SendIcon className="h-5 w-5" />
     </Button>
   );
 }

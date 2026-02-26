@@ -10,7 +10,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { InputMode } from "./input/InputMode";
 import { InputFileList } from "./input/InputFileList";
 import { InputFileSelector } from "./input/InputFileSelector";
-import { InputStopButton } from "./input/InputStopButton";
+import { InputButton } from "./input/InputButton";
 interface ChatInputProps {
   disabled?: boolean;
   onStopGenerating?: () => void;
@@ -87,7 +87,7 @@ export function ChatInput({
         <InputMode mode={mode} setMode={setMode} />
         <InputFileList selectedFiles={selectedFiles} removeFile={removeFile} />
         {/* 🔧 核心：输入框+按钮行，宽度100%固定，布局永远不会动 */}
-        <div className="flex w-full gap-2 items-end">
+        <div className="flex w-full gap-3 items-end">
           <InputFileSelector disabled={disabled} isGenerating={isGenerating} />
           {/* 输入框：flex-1占满剩余空间，不会被挤压 */}
           <Input
@@ -105,7 +105,7 @@ export function ChatInput({
           />
 
           {/* 停止/发送按钮：固定宽高，永远在最右边，不会动 */}
-          <InputStopButton
+          <InputButton
             isGenerating={isGenerating}
             onStopGenerating={onStopGenerating}
             handleSend={handleSend}
