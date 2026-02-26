@@ -1,6 +1,5 @@
-// src/components/chat/MessageContent.tsx
+// src/components/chat/message/MessageContent.tsx
 "use client";
-
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { MessageImage } from "./MessageImage";
@@ -26,7 +25,13 @@ export function MessageContent({
   const isGeneratingImage = message.isGeneratingImage;
 
   return (
-    <div className="flex flex-col gap-1">
+    // ✅ 外层容器：用户消息整体右对齐，AI左对齐
+    <div
+      className={cn(
+        "flex flex-col w-full",
+        isUser ? "items-end" : "items-start",
+      )}
+    >
       {/* 用户消息的文件附件 */}
       {isUser && message.fileAttachments && (
         <MessageAttachments fileAttachments={message.fileAttachments} />
@@ -40,33 +45,59 @@ export function MessageContent({
         imageAlt={message.content}
       />
 
-      {/* 消息气泡 */}
-      <div className="flex flex-col gap-1">
+      {/* 核心：消息气泡 + 操作栏 */}
+      <div
+        className={cn(
+          "flex flex-col gap-1 w-full max-w-none",
+          !isUser && "group", // 只有 AI 消息才加 group
+        )}
+      >
         <div
           className={cn(
-            "rounded-lg px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm shadow-sm",
+            // 通用基础样式
+            "rounded-2xl px-4 py-2.5 text-sm md:text-base leading-relaxed",
+            // 宽度控制：最小宽度适配内容，最大宽度限制，防止被压缩
+            "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
+            // 对齐控制：用户气泡靠右，AI靠左
+            isUser ? "ml-auto" : "mr-auto",
+            // 豆包同款样式
             isUser
-              ? "bg-blue-500 text-white"
-              : "bg-card text-card-foreground border border-border",
+              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
+              : "bg-transparent border-none text-foreground shadow-none",
+            // Markdown样式
             "prose prose-xs md:prose-sm dark:prose-invert max-w-none",
           )}
         >
           <MarkdownRenderer content={message.content} isUser={isUser} />
+          {/* 流式打字光标 */}
           {isStreaming && (
             <span className="inline-block w-2 h-4 ml-1 bg-slate-400 animate-pulse align-middle" />
           )}
         </div>
 
-        {/* AI回复的操作栏 */}
+        {/* ✅ 操作栏：确保它有独立的一行，宽度足够，对齐方式和气泡一致 */}
         {!isUser && !isStreaming && !isGeneratingImage && (
-          <MessageActions
-            messageId={message.id}
-            content={message.content}
-            isStreaming={isStreaming}
-            hasStopFunction={hasStopFunction}
-            onRegenerate={onRegenerate}
-            onDelete={onDelete}
-          />
+          <div
+            className={cn(
+              "w-full flex group",
+              isUser ? "justify-end" : "justify-start",
+            )}
+          >
+            <div
+              className={
+                isUser ? "ml-auto" : "mr-auto max-w-[80%] md:max-w-[70%]"
+              }
+            >
+              <MessageActions
+                messageId={message.id}
+                content={message.content}
+                isStreaming={isStreaming}
+                hasStopFunction={hasStopFunction}
+                onRegenerate={onRegenerate}
+                onDelete={onDelete}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

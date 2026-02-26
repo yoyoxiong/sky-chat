@@ -3,7 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import type { Components, CodeComponentProps } from "react-markdown";
+import type { CodeComponentProps } from "react-markdown/lib/ast-to-react";
 import { cn } from "@/lib/utils";
 // 1. 导入需要的依赖
 import { useState } from "react";
@@ -34,7 +34,7 @@ function CodeBlock({
   };
 
   return (
-    <div className="my-3 rounded-md overflow-hidden w-full relative group">
+    <div className="my-3 rounded-xl overflow-hidden w-full relative group">
       {/* 代码语言标签 */}
       <div className="absolute top-2 left-3 text-xs text-slate-400 font-mono z-10">
         {language || "text"}
@@ -55,7 +55,8 @@ function CodeBlock({
         style={oneDark as any}
         language={language || "text"}
         PreTag="div"
-        className="text-xs rounded-md w-full pt-10"
+        // ✅ 这里加了一点左边框，让代码块在透明背景下更有质感
+        className="text-xs rounded-xl w-full pt-10 border-l-4 border-blue-500/50"
         wrapLongLines={true}
       >
         {codeContent}
@@ -69,7 +70,12 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
     <ReactMarkdown
       components={{
         // 3. 在 components 里引用我们抽出来的 CodeBlock 组件
-        code: ({ inline, className, children, ...props }: CodeComponentProps) => {
+        code: ({
+          inline,
+          className,
+          children,
+          ...props
+        }: CodeComponentProps) => {
           const match = /language-(\w+)/.exec(className || "");
           // 区分行内代码和代码块
           if (!inline && match) {
@@ -97,7 +103,7 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
           }
         },
         p: ({ children }) => (
-          <p className="mb-2 last:mb-0 leading-relaxed break-words w-full">
+          <p className="mb-2 last:mb-0 leading-relaxed break-words">
             {children}
           </p>
         ),

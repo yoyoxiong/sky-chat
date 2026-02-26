@@ -3,11 +3,8 @@
 
 import { Loader2, AlertCircle, X } from "lucide-react";
 // 把原来的导入删掉，换成我们自己写的
-import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@/components/ui/visually-hidden"; // ✅ 导入我们自己写的
-import { Button } from "@/components/ui/button";
+import { ImagePreviewDialog } from "./ImagePreviewDialog";
 import { useState } from "react";
-
 
 interface MessageImageProps {
   imageUrl?: string;
@@ -70,25 +67,12 @@ export function MessageImage({
         </div>
 
         {/* 预览大图 Dialog */}
-        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-4xl p-0 overflow-hidden border-none bg-transparent shadow-none">
-              <VisuallyHidden>
-                <DialogTitle>生成的图片预览</DialogTitle>
-              </VisuallyHidden>
-            <div className="relative w-full">
-              {/* 关闭按钮 */}
-               <DialogClose className="absolute top-1 right-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white">
-        <X className="h-5 w-5" />
-      </DialogClose>
-              {/* 完整大图 */}
-              <img
-                src={imageUrl}
-                alt={imageAlt}
-                className="w-full h-auto max-h-[80vh] object-contain"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ImagePreviewDialog
+          open={isPreviewOpen}
+          onOpenChange={setIsPreviewOpen}
+          imageUrl={imageUrl}
+          imageAlt={imageAlt}
+        />
       </>
     );
   }

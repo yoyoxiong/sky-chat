@@ -395,9 +395,8 @@ export const useChatStore = create<ChatStore>()(
           }));
         } catch (error: unknown) {
           // 先判断 error 是不是 Error 类型
-  const errorMessage = error instanceof Error 
-    ? error.message 
-    : "网络错误，请重试";
+          const errorMessage =
+            error instanceof Error ? error.message : "网络错误，请重试";
           // 9. 网络错误兜底
           set((state) => ({
             conversations: state.conversations.map((conv) => {
