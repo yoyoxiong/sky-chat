@@ -1,7 +1,13 @@
 // src/components/chat/MessageImage.tsx
 "use client";
 
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, X } from "lucide-react";
+// 把原来的导入删掉，换成我们自己写的
+import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@/components/ui/visually-hidden"; // ✅ 导入我们自己写的
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+
 
 interface MessageImageProps {
   imageUrl?: string;
@@ -16,11 +22,14 @@ export function MessageImage({
   generateImageError,
   imageAlt = "Generated image",
 }: MessageImageProps) {
+  // 新增：控制预览大图 Dialog 的状态
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   // 生成中状态
   if (isGeneratingImage) {
     return (
       <div className="flex flex-col gap-3 py-6 justify-center items-center w-full">
-        <div className="relative w-full max-w-sm aspect-square rounded-lg bg-accent/50 animate-pulse overflow-hidden">
+        <div className="relative w-full max-w-sm aspect-[9/16] rounded-lg bg-accent/50 animate-pulse overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-accent/10" />
           <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 animate-spin text-blue-500" />
         </div>
@@ -44,21 +53,43 @@ export function MessageImage({
   // 正常图片展示
   if (imageUrl) {
     return (
-      <div className="my-3 w-64 h-64 overflow-hidden rounded-md border border-border">
-        <a
-          href={imageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full"
-        >
-          <img
-            src={imageUrl}
-            alt={imageAlt}
-            className="w-64 h-64 object-cover rounded-md hover:opacity-90 transition-opacity"
-            loading="lazy"
-          />
-        </a>
-      </div>
+      <>
+        {/* 缩略图展示 */}
+        <div className="my-3 w-full max-w-xs overflow-hidden rounded-md border border-border">
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="block w-full cursor-pointer"
+          >
+            <img
+              src={imageUrl}
+              alt={imageAlt}
+              className="w-full h-auto object-contain rounded-md hover:opacity-90 transition-opacity"
+              loading="lazy"
+            />
+          </button>
+        </div>
+
+        {/* 预览大图 Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden border-none bg-transparent shadow-none">
+              <VisuallyHidden>
+                <DialogTitle>生成的图片预览</DialogTitle>
+              </VisuallyHidden>
+            <div className="relative w-full">
+              {/* 关闭按钮 */}
+               <DialogClose className="absolute top-1 right-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white">
+        <X className="h-5 w-5" />
+      </DialogClose>
+              {/* 完整大图 */}
+              <img
+                src={imageUrl}
+                alt={imageAlt}
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 

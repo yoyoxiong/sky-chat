@@ -15,12 +15,7 @@ import {
 import { PlusIcon, MessageSquareIcon, Trash2Icon } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import type { Conversation } from "@/store/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+// ✅ 1. 删除 Tooltip 相关导入
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -59,7 +54,7 @@ export default function ChatLayout({
     setIsSidebarOpen(false); // 选完会话自动关闭侧边栏
   };
 
-  // 屏幕宽度变大到PC端时，自动关闭侧边栏
+  // 监听窗口大小变化，自动关闭侧边栏（当从移动端切换到PC端时）
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -145,81 +140,72 @@ export default function ChatLayout({
               暂无历史会话
             </p>
           ) : (
-            <TooltipProvider>
+            // ✅ 2. 补一个简单的 div 作为外层包裹元素
+            <div>
+              {/* ✅ 3. 直接 map，去掉所有 Tooltip 标签 */}
               {conversations.map((conv: Conversation) => (
-                <Tooltip key={conv.id}>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={() => handleSelectConversation(conv.id)}
-                      onDoubleClick={() => {
-                        setEditingConvId(conv.id);
-                        setTempTitle(conv.title);
-                        setTimeout(() => {
-                          inputRef.current?.focus();
-                        }, 0);
+                <div
+                  key={conv.id} // ✅ 4. key 直接加在这个 div 上
+                  onClick={() => handleSelectConversation(conv.id)}
+                  onDoubleClick={() => {
+                    setEditingConvId(conv.id);
+                    setTempTitle(conv.title);
+                    setTimeout(() => {
+                      inputRef.current?.focus();
+                    }, 0);
+                  }}
+                  className={`active:bg-accent cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group ${
+                    activeConversationId === conv.id
+                      ? "bg-blue-50 dark:bg-primary/20 text-blue-700 dark:text-primary font-medium"
+                      : "text-foreground hover:bg-accent"
+                  }`}
+                >
+                  <MessageSquareIcon className="w-4 h-4 flex-shrink-0" />
+                  {editingConvId === conv.id ? (
+                    <Input
+                      value={tempTitle}
+                      onChange={(e) => setTempTitle(e.target.value)}
+                      className="h-7 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          if (tempTitle.trim() !== "") {
+                            renameConversation(conv.id, tempTitle.trim());
+                            setEditingConvId(null);
+                          }
+                        } else if (e.key === "Escape") {
+                          setEditingConvId(null);
+                        }
                       }}
-                      className={`active:bg-accent cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group ${
-                        activeConversationId === conv.id
-                          ? "bg-blue-50 dark:bg-primary/20 text-blue-700 dark:text-primary font-medium"
-                          : "text-foreground hover:bg-accent"
-                      }`}
+                      onBlur={() => {
+                        if (tempTitle.trim() !== "") {
+                          renameConversation(conv.id, tempTitle.trim());
+                          setEditingConvId(null);
+                        }
+                      }}
+                      ref={inputRef}
+                    />
+                  ) : (
+                    <span className="text-sm truncate flex-1">
+                      {conv.title}
+                    </span>
+                  )}
+
+                  {editingConvId !== conv.id && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConvIdToDelete(conv.id);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      className="opacity-100 md:opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 transition-all flex-shrink-0"
                     >
-                      <MessageSquareIcon className="w-4 h-4 flex-shrink-0" />
-                      {editingConvId === conv.id ? (
-                        <Input
-                          value={tempTitle}
-                          onChange={(e) => setTempTitle(e.target.value)}
-                          className="h-7 text-sm"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              if (tempTitle.trim() !== "") {
-                                renameConversation(conv.id, tempTitle.trim());
-                                setEditingConvId(null);
-                              }
-                            } else if (e.key === "Escape") {
-                              setEditingConvId(null);
-                            }
-                          }}
-                          onBlur={() => {
-                            if (tempTitle.trim() !== "") {
-                              renameConversation(conv.id, tempTitle.trim());
-                              setEditingConvId(null);
-                            }
-                          }}
-                          ref={inputRef}
-                        />
-                      ) : (
-                        <span className="text-sm truncate flex-1">
-                          {conv.title}
-                        </span>
-                      )}
-                      {/* 删除按钮：hover显示 */}
-                      {editingConvId !== conv.id && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConvIdToDelete(conv.id);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          className="opacity-100 md:opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 transition-all flex-shrink-0"
-                        >
-                          <Trash2Icon className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  {/* Tooltip仅PC端显示，移动端隐藏 */}
-                  <TooltipContent
-                    side="right"
-                    align="center"
-                    className="hidden md:block"
-                  >
-                    {conv.title}
-                  </TooltipContent>
-                </Tooltip>
+                      <Trash2Icon className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               ))}
-            </TooltipProvider>
+            </div>
           )}
         </div>
       </aside>
