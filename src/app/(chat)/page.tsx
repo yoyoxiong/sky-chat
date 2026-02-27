@@ -5,10 +5,21 @@ import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useChatStore } from "@/store/useChatStore";
 import { ChevronDown } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 
 export default function ChatPage() {
-  const { conversations, activeConversationId, sendMessage, stopGenerating } =
-    useChatStore();
+  const {
+    conversations,
+    activeConversationId,
+    sendMessage,
+    stopGenerating,
+    isSelectionMode,
+    selectedMessageIds,
+    toggleSelectionMode,
+    toggleMessageSelection,
+    clearSelection,
+    deleteSelectedMessages,
+  } = useChatStore();
   const activeConversation = conversations.find(
     (conv) => conv.id === activeConversationId,
   );
@@ -80,12 +91,37 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
-      <div className="hidden md:block border-b bg-card border-border px-6 py-3 shrink-0">
-        <h2 className="font-semibold text-card-foreground">
-          {activeConversation.title}
-        </h2>
-      </div>
+      {isSelectionMode && (
+        <div className="border-b bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearSelection}
+              className="p-1.5 rounded-md hover:bg-accent transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <span className="font-medium">
+              已选择 {selectedMessageIds.length} 条消息
+            </span>
+          </div>
+          <button
+            onClick={deleteSelectedMessages}
+            disabled={selectedMessageIds.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            删除
+          </button>
+        </div>
+      )}
 
+      {!isSelectionMode && (
+        <div className="hidden md:block border-b bg-card border-border px-6 py-3 shrink-0">
+          <h2 className="font-semibold text-card-foreground">
+            {activeConversation?.title}
+          </h2>
+        </div>
+      )}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}

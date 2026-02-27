@@ -1,6 +1,6 @@
 // src/components/chat/MessageActions.tsx
 "use client";
-
+import { useChatStore } from "@/store/useChatStore";
 import { useState } from "react";
 import {
   Copy,
@@ -33,7 +33,7 @@ export function MessageActions({
   const [isCopied, setIsCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const { toggleSelectionMode, toggleMessageSelection } = useChatStore();
   // 复制消息内容
   const handleCopy = async () => {
     try {
@@ -112,14 +112,10 @@ export function MessageActions({
   };
 
   // 删除消息
-  const handleDelete = async () => {
+  const handleDelete = (messageId: string) => {
     if (isStreaming || hasStopFunction) return;
-    setIsDeleting(true);
-    try {
-      await onDelete(messageId);
-    } finally {
-      setIsDeleting(false);
-    }
+    toggleSelectionMode(); // 核心：进入选择模式
+    toggleMessageSelection(messageId); // 核心：选中当前消息
   };
 
   return (
@@ -171,7 +167,7 @@ export function MessageActions({
 
       {/* 删除按钮 */}
       <button
-        onClick={handleDelete}
+        onClick={() => handleDelete(messageId)}
         disabled={isDeleting || !!hasStopFunction}
         className="p-1.5 md:hover:bg-red-50 md:hover:text-red-500 rounded-md transition-colors disabled:opacity-50"
         title="删除对话"

@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
-import { fetchStream } from "@/lib/stream"; // 导入我们封装的流式工具
+import { fetchStream } from "@/lib/stream";
 import { generateChatTitle } from "@/app/api/chat";
 
 interface ChatStore {
@@ -16,9 +16,16 @@ interface ChatStore {
   setActiveConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
   sendMessage: (content: string, fileAttachments: FileMeta[]) => Promise<void>; // 改成异步函数
-  stopGenerating: () => void; // 新增：停止生成的方法
-  renameConversation: (id: string, newTitle: string) => void; // 新增：重命名方法
+  stopGenerating: () => void; // 停止生成的方法
+  renameConversation: (id: string, newTitle: string) => void; // 重命名方法
   generateImage: (prompt: string) => Promise<void>;
+
+  isSelectionMode: boolean;
+  selectedMessageIds: string[];
+  toggleSelectionMode: () => void;
+  toggleMessageSelection: (messageId: string) => void;
+  clearSelection: () => void;
+  deleteSelectedMessages: () => Promise<void>; // 批量删除
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -26,8 +33,10 @@ export const useChatStore = create<ChatStore>()(
     (set, get) => ({
       conversations: [],
       activeConversationId: null,
-      currentStopFn: null, // 初始为null
+      currentStopFn: null,
       isRecognizingIntent: false,
+      isSelectionMode: false,
+      selectedMessageIds: [],
 
       createNewConversation: () => {
         const newId = Date.now().toString();
@@ -99,8 +108,7 @@ export const useChatStore = create<ChatStore>()(
         }));
       },
 
-      // 核心：发送消息 + 流式获取AI回复
-      // 只需要修改sendMessage函数的定义和实现，其他代码完全不动
+      // 发送消息 + 流式获取AI回复
       sendMessage: async (
         content: string,
         fileAttachments: FileMeta[] = [],
@@ -254,7 +262,7 @@ export const useChatStore = create<ChatStore>()(
           },
         );
       },
-      // 👇 新增：文生图核心方法
+      // 文生图核心方法
       generateImage: async (prompt: string) => {
         //const state = get();
         //1. 没有选中会话时自动新建，和聊天逻辑一致
@@ -421,7 +429,7 @@ export const useChatStore = create<ChatStore>()(
           }));
         }
       },
-      // 👇 新增1：重新生成AI回复
+      // 重新生成AI回复
       regenerateMessage: async (messageId: string) => {
         const state = get();
         // 边界判断
@@ -521,7 +529,7 @@ export const useChatStore = create<ChatStore>()(
         );
       },
 
-      // 👇 新增2：删除单条消息（同时删除对应的问答对，符合主流交互）
+      // 删除单条消息（同时删除对应的问答对，符合主流交互）
       deleteMessage: async (messageId: string) => {
         const state = get();
         if (!state.activeConversationId) return;
@@ -566,14 +574,58 @@ export const useChatStore = create<ChatStore>()(
           }),
         }));
       },
-      // 👇 核心：统一发送方法，自动判断意图，解决回车键尴尬
+      // 切换选择模式
+      toggleSelectionMode: () =>
+        set((state) => ({
+          isSelectionMode: !state.isSelectionMode,
+          selectedMessageIds: !state.isSelectionMode
+            ? []
+            : state.selectedMessageIds, // 开启时清空，关闭时也清空
+        })),
+
+      // 切换某条消息的选中状态
+      toggleMessageSelection: (messageId: string) =>
+        set((state) => ({
+          selectedMessageIds: state.selectedMessageIds.includes(messageId)
+            ? state.selectedMessageIds.filter((id) => id !== messageId)
+            : [...state.selectedMessageIds, messageId],
+        })),
+
+      // 清空选中
+      clearSelection: () =>
+        set({ selectedMessageIds: [], isSelectionMode: false }),
+
+      // 批量删除选中的消息
+      deleteSelectedMessages: async () => {
+        const state = get();
+        if (
+          !state.activeConversationId ||
+          state.selectedMessageIds.length === 0
+        )
+          return;
+
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id === state.activeConversationId) {
+              return {
+                ...conv,
+                messages: conv.messages.filter(
+                  (msg) => !state.selectedMessageIds.includes(msg.id),
+                ),
+              };
+            }
+            return conv;
+          }),
+          // 删除后自动退出选择模式
+          isSelectionMode: false,
+          selectedMessageIds: [],
+        }));
+      },
     }),
     {
       // 1. localStorage 的键名
       name: "ai-chat-conversations",
 
-      // 👉 关键修改：把 Date 处理逻辑移到 createJSONStorage 里，类型安全！
-      // 👉 只需要替换这一段 storage 配置
       storage: createJSONStorage(() => localStorage, {
         // 存的时候：把 Date 转成 ISO 字符串
         replacer: (key, value) => {

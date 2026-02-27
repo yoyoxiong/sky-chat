@@ -5,14 +5,24 @@ import { cn } from "@/lib/utils";
 import { useChatStore } from "@/store/useChatStore";
 import type { Message } from "@/store/types";
 import { MessageContent } from "./message/MessageContent";
+import { CheckCircle2, Circle } from "lucide-react"; // 引入复选框图标
 
 interface ChatMessageProps {
   message: Message;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
-  const { regenerateMessage, deleteMessage, currentStopFn } = useChatStore();
+  const {
+    regenerateMessage,
+    deleteMessage,
+    currentStopFn,
+    isSelectionMode,
+    selectedMessageIds,
+    toggleMessageSelection,
+  } = useChatStore();
+
   const isUser = message.role === "user";
+  const isSelected = selectedMessageIds.includes(message.id);
 
   // 组件卸载时停止语音朗读
   useEffect(() => {
@@ -24,15 +34,51 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }, []);
 
   return (
-    // ✅ 核心：外层容器固定宽度居中，和豆包一样两边留白
     <div className="w-full px-4 md:px-0 mx-auto max-w-3xl mb-6">
-      {/* ✅ 核心Flex布局：用户消息右对齐，AI左对齐 */}
-      <MessageContent
-        message={message}
-        onRegenerate={regenerateMessage}
-        onDelete={deleteMessage}
-        hasStopFunction={!!currentStopFn}
-      />
+      <div
+        className={cn(
+          "flex w-full items-start gap-3",
+          isUser ? "justify-end" : "justify-start",
+        )}
+      >
+        {/*选择模式下显示复选框（只在AI消息左边显示，或者两边都显示，这里选两边都显示） */}
+        {isSelectionMode && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMessageSelection(message.id);
+            }}
+            className={cn(
+              "mt-2.5 shrink-0 transition-all duration-200",
+              // 给用户消息的复选框也留位置，保持对齐
+              isUser ? "order-2" : "order-1",
+            )}
+          >
+            {isSelected ? (
+              <CheckCircle2 className="h-6 w-6 text-blue-600" />
+            ) : (
+              <Circle className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+            )}
+          </button>
+        )}
+
+        {/* 消息内容 */}
+        <div
+          className={cn(
+            "flex flex-col gap-1 w-full",
+            isSelectionMode ? "flex-1" : "w-full",
+            isUser ? "order-1" : "order-2",
+          )}
+        >
+          <MessageContent
+            message={message}
+            onRegenerate={regenerateMessage}
+            onDelete={deleteMessage}
+            hasStopFunction={!!currentStopFn}
+          />
+        </div>
+      </div>
     </div>
   );
 }
