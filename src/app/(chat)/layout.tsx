@@ -11,11 +11,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PlusIcon } from "lucide-react";
+import { CircleFadingPlus } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ConversationList } from "@/components/chat/conversation/ConversationList";
-
+import { sidebar } from "@/components/ui/button";
 export default function ChatLayout({
   children,
 }: {
@@ -69,7 +69,7 @@ export default function ChatLayout({
       {/* 侧边栏：PC端固定显示，移动端抽屉式 */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-72 border-r border-border bg-card flex flex-col
+          fixed inset-y-0 left-0 z-50 w-65 border-r border-border bg-sidebar flex flex-col
           transition-transform duration-300
           /* 移动端默认隐藏 */
           -translate-x-full
@@ -82,7 +82,7 @@ export default function ChatLayout({
         {/* 侧边栏头部：标题、关闭按钮、主题切换、新建聊天 */}
         <div className="p-4 border-b border-border shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-card-foreground">Sky-Chat</h2>
+            <h2 className="text-xl font-bold text-[#3964fe]">Sky-Chat</h2>
             <div className="flex items-center gap-2">
               {/* 移动端关闭按钮：仅手机显示 */}
               <button
@@ -113,14 +113,15 @@ export default function ChatLayout({
           </div>
           {/* 新建聊天按钮 */}
           <Button
-            className="w-full justify-start gap-2"
+            variant="sidebar"
+            className="w-full justify-center gap-2 cursor-pointer"
             onClick={() => {
               createNewConversation();
               setIsSidebarOpen(false);
             }}
           >
-            <PlusIcon className="w-4 h-4" />
-            新建聊天
+            <CircleFadingPlus className="size-5" />
+            开启新对话
           </Button>
         </div>
 
@@ -133,7 +134,7 @@ export default function ChatLayout({
       </aside>
 
       {/* 聊天主内容区 */}
-      <main className="flex-1 flex flex-col bg-background overflow-hidden">
+      <main className="flex-1 flex flex-col bg-[] overflow-hidden">
         {/* 移动端顶部导航：仅手机显示，显示当前会话标题 */}
         <div className="md:hidden border-b border-border p-3 flex items-center gap-3 shrink-0">
           <button

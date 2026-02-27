@@ -114,7 +114,7 @@ export default function ChatPage() {
       )}
       {!isSelectionMode && (
         <div className="hidden md:block bg-card px-6 py-3 shrink-0">
-          <h2 className="font-semibold text-card-foreground">
+          <h2 className="font-normal text-card-foreground text-center">
             {activeConversation?.title}
           </h2>
         </div>

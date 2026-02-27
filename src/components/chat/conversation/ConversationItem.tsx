@@ -48,12 +48,10 @@ export function ConversationItem({
       className={cn(
         "active:bg-accent cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group",
         isActive
-          ? "bg-blue-50 dark:bg-primary/20 text-blue-700 dark:text-primary font-medium"
+          ? "bg-blue-50 dark:bg-[#353638] dark:text-[#f5f5f5] text-[#4a72fe] font-medium"
           : "text-foreground hover:bg-accent",
       )}
     >
-      <MessageSquareIcon className="w-4 h-4 flex-shrink-0" />
-
       {isEditing ? (
         <Input
           value={tempTitle}
@@ -66,7 +64,12 @@ export function ConversationItem({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className="text-sm truncate flex-1">{conv.title}</span>
+        <>
+          <span className="text-sm truncate flex-1">{conv.title}</span>
+          <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            双击修改标题
+          </span>
+        </>
       )}
 
       {!isEditing && (

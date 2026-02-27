@@ -66,7 +66,6 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
   return (
     <ReactMarkdown
       components={{
-        // 3. 在 components 里引用我们抽出来的 CodeBlock 组件
         code: ({
           inline,
           className,
@@ -100,9 +99,7 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
           }
         },
         p: ({ children }) => (
-          <p className="mb-2 last:mb-0 leading-relaxed break-words">
-            {children}
-          </p>
+          <p className="mb-3 last:mb-0 leading-loose break-words">{children}</p>
         ),
         ul: ({ children }) => (
           <ul className="list-disc list-inside mb-2 space-y-1 ml-1 break-words w-full">

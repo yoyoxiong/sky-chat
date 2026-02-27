@@ -8,7 +8,7 @@ interface ChatStore {
   conversations: Conversation[];
   activeConversationId: string | null;
   currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
-
+  isLatestMessage: boolean;
   regenerateMessage: (messageId: string) => Promise<void>; // 重新生成
   deleteMessage: (messageId: string) => Promise<void>; // 删除消息
   createNewConversation: () => void;
@@ -36,6 +36,7 @@ export const useChatStore = create<ChatStore>()(
       isRecognizingIntent: false,
       isSelectionMode: false,
       selectedMessageIds: [],
+      isLatestMessage: false,
 
       createNewConversation: () => {
         const newId = Date.now().toString();
@@ -154,16 +155,21 @@ export const useChatStore = create<ChatStore>()(
           content: "",
           timestamp: new Date(),
           isStreaming: true,
+          isLatestMessage: true, // 标记为最新消息
         };
 
         // 5. 先把两条消息更新到Store，UI立刻渲染
         set((state) => ({
           conversations: state.conversations.map((conv) => {
             if (conv.id === state.activeConversationId) {
+              const UpdatedMessages = conv.messages.map((msg) => ({
+                ...msg,
+                isLatestMessage: false, // 把之前的消息都标记为非最新
+              }));
               return {
                 ...conv,
                 title: tempTitle,
-                messages: [...conv.messages, userMessage, aiMessage],
+                messages: [...UpdatedMessages, userMessage, aiMessage],
               };
             }
             return conv;

@@ -11,11 +11,13 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MessageActionsProps {
   messageId: string;
   content: string;
   isStreaming?: boolean;
+  isLastestMessage?: boolean;
   hasStopFunction?: boolean;
   onRegenerate: (messageId: string) => void;
   onDelete: (messageId: string) => Promise<void>;
@@ -25,6 +27,7 @@ export function MessageActions({
   messageId,
   content,
   isStreaming = false,
+  isLastestMessage = false,
   hasStopFunction = false,
   onRegenerate,
 }: MessageActionsProps) {
@@ -117,7 +120,20 @@ export function MessageActions({
   };
 
   return (
-    <div className="flex items-center gap-1 ml-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+    <div
+      className={cn(
+        "flex items-center gap-1 ml-1 transition-opacity",
+        // 2. 移动端：一直显示
+        "opacity-100",
+        // 3. 桌面端：核心逻辑
+        //    - 如果是最新消息 且 不在流式输出：显示
+        //    - 否则：只有 hover 才显示
+        "md:opacity-0 md:group-hover:opacity-100",
+        isLastestMessage &&
+          !isStreaming &&
+          "md:opacity-100 md:group-hover:opacity-100",
+      )}
+    >
       {/* 复制按钮 */}
       <button
         onClick={handleCopy}

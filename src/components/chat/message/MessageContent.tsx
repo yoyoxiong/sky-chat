@@ -22,6 +22,7 @@ export function MessageContent({
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isGeneratingImage = message.isGeneratingImage;
+  const isLatestMessage = message.isLatestMessage; // 是否是最新消息
 
   return (
     // 外层容器：用户消息整体右对齐，AI左对齐
@@ -61,7 +62,7 @@ export function MessageContent({
             // 对齐控制：用户气泡靠右，AI靠左
             isUser ? "ml-auto" : "mr-auto",
             isUser
-              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
+              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-[#2c2c2e] text-gray-900 dark:text-white shadow-sm"
               : "bg-transparent border-none text-foreground shadow-none",
             // Markdown样式
             "prose prose-xs md:prose-sm dark:prose-invert max-w-none",
@@ -94,6 +95,7 @@ export function MessageContent({
                 hasStopFunction={hasStopFunction}
                 onRegenerate={onRegenerate}
                 onDelete={onDelete}
+                isLastestMessage={isLatestMessage}
               />
             </div>
           </div>

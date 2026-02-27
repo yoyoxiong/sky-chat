@@ -114,10 +114,11 @@ export function ChatInput({
 
         <div
           className={cn(
-            "relative w-full rounded-2xl border border-border bg-card shadow-sm transition-all duration-200",
-            // 聚焦时的高亮效果
-            "focus-within:border-blue-500/50 focus-within:shadow-md",
-            // 禁用时的样式
+            "relative w-full rounded-2xl border border-border transition-all duration-200",
+            // 浅色模式保持原来的样式，深色模式用DeepSeek同款输入框背景
+            "bg-white dark:bg-input",
+            // 聚焦效果：深色模式下边框高亮
+            "focus-within:border-primary/50 focus-within:shadow-md",
             disabled && "opacity-60 cursor-not-allowed",
           )}
         >
@@ -141,8 +142,9 @@ export function ChatInput({
               isGenerating ? "AI正在生成中..." : "给Sky-Chat发送消息"
             }
             disabled={disabled || isGenerating}
-            rows={1} // 初始1行，自动撑开
-            className="w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+            rows={1}
+            // 新增：深色模式placeholder颜色更柔和
+            className="w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm outline-none placeholder:text-muted-foreground dark:placeholder:text-muted-foreground/80 disabled:cursor-not-allowed"
           />
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2">
             {/*输入模式切换按钮 */}

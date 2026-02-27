@@ -10,6 +10,7 @@ export interface Message {
   imageUrl?: string; // 生成的图片地址
   isGeneratingImage?: boolean; // 标记是否正在生成图片
   generateImageError?: string; // 图片生成失败的错误信息
+  isLatestMessage?: boolean; // 是否是当前会话的最新消息
 }
 
 // 定义单个会话的类型
