@@ -17,7 +17,6 @@ export function ConversationList({
           暂无历史会话
         </p>
       ) : (
-        // ✅ 2. 补一个简单的 div 作为外层包裹元素
         <div>
           {conversations.map((conv: Conversation) => (
             <ConversationItem

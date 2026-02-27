@@ -1,4 +1,3 @@
-// src/components/chat/ConversationItem.tsx
 "use client";
 
 import { MessageSquareIcon, Trash2Icon } from "lucide-react";
@@ -27,7 +26,6 @@ export function ConversationItem({
   const handleDoubleClick = () => {
     setIsEditing(true);
     setTempTitle(conv.title);
-    // 等 DOM 更新后聚焦
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 

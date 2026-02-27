@@ -1,5 +1,4 @@
-// src/app/api/generate-image/route.ts
-// 🔧 优化版异步模式：200ms极速轮询，和同步一样快，同时彻底规避超时风险
+// 文生图API接口，使用阿里云DashScope服务
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
     const taskRes = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,//身份验证
+        Authorization: `Bearer ${apiKey}`, //身份验证
         "Content-Type": "application/json",
         "X-DashScope-Async": "enable", // 保留异步模式
       },
@@ -33,14 +32,14 @@ export async function POST(req: Request) {
         model: "wanx-v1",
         input: { prompt: prompt.trim() },
         parameters: {
-          style: "<photography>",//图片风格
-          size: "720*1280",//图片大小
-          n: 1,//单次生成图片张数
-          steps: 15,//迭代步数(图片打磨次数)次数越多越精致
+          style: "<photography>", //图片风格
+          size: "720*1280", //图片大小
+          n: 1, //单次生成图片张数
+          steps: 15, //迭代步数(图片打磨次数)次数越多越精致
         },
       }),
     });
-
+    //未拿到任务ID，直接报错
     if (!taskRes.ok) {
       const error = await taskRes.json();
       return NextResponse.json(
@@ -52,8 +51,7 @@ export async function POST(req: Request) {
     const { output } = await taskRes.json();
     const taskId = output.task_id;
     if (!taskId) throw new Error("未获取到任务ID");
-
-    // 2. 🔧 极速轮询：200ms查一次，最多查50次（10秒超时兜底），比之前快5倍
+    // 2. 极速轮询：200ms查一次，最多查50次（10秒超时兜底），比之前快5倍
     const maxRetry = 50;
     const pollInterval = 200; // 200毫秒轮询，生成完立刻拿到结果
     let retryCount = 0;

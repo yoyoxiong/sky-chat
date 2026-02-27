@@ -26,7 +26,6 @@ export function InputFileSelector({
         disabled={disabled || isGenerating}
       />
 
-      {/* 上传按钮：固定宽高，永远在最左边，不会动 */}
       <Button
         type="button"
         variant="ghost"

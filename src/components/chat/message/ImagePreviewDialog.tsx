@@ -1,4 +1,3 @@
-// src/components/chat/ImagePreviewDialog.tsx
 "use client";
 
 import {

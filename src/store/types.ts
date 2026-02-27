@@ -20,14 +20,14 @@ export interface Conversation {
   createdAt: Date;
 }
 
-// 👇 新增：文件元数据类型，全局通用
+// 文件元数据类型，全局通用
 export interface FileMeta {
   id: string;
   name: string;
   size: number;
 }
 
-// 👇 新增：选中的文件类型，包含临时的文件内容
+// 选中的文件类型，包含临时的文件内容
 export interface SelectedFile extends FileMeta {
   content: string;
 }

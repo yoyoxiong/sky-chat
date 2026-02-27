@@ -1,4 +1,3 @@
-// src/components/chat/MarkdownRenderer.tsx
 "use client";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -14,7 +13,6 @@ interface MarkdownRendererProps {
   isUser: boolean;
 }
 
-// 2. 抽出来的独立 React 组件（首字母大写，符合 Hooks 规则）
 function CodeBlock({
   language,
   children,
@@ -55,7 +53,6 @@ function CodeBlock({
         style={oneDark as any}
         language={language || "text"}
         PreTag="div"
-        // ✅ 这里加了一点左边框，让代码块在透明背景下更有质感
         className="text-xs rounded-xl w-full pt-10 border-l-4 border-blue-500/50"
         wrapLongLines={true}
       >

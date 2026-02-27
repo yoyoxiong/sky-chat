@@ -1,11 +1,9 @@
-// src/app/api/generate-title/route.ts
 import { NextResponse } from "next/server";
 
-// 专门用来生成会话标题的API
+// 生成会话标题的API，调用deepseek模型
 export async function POST(req: Request) {
   try {
     const { userMessage } = await req.json();
-    // 复用你已经配置好的环境变量，不用额外修改
     const apiUrl = process.env.AI_API_URL;
     const apiKey = process.env.AI_API_KEY;
 
@@ -21,7 +19,7 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // 复用你现有的模型
+        model: "deepseek-chat",
         messages: [
           {
             role: "system",

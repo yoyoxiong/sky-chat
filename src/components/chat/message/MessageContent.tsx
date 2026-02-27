@@ -1,4 +1,3 @@
-// src/components/chat/message/MessageContent.tsx
 "use client";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "../MarkdownRenderer";
@@ -25,7 +24,7 @@ export function MessageContent({
   const isGeneratingImage = message.isGeneratingImage;
 
   return (
-    // ✅ 外层容器：用户消息整体右对齐，AI左对齐
+    // 外层容器：用户消息整体右对齐，AI左对齐
     <div
       className={cn(
         "flex flex-col w-full",
@@ -45,13 +44,14 @@ export function MessageContent({
         imageAlt={message.content}
       />
 
-      {/* 核心：消息气泡 + 操作栏 */}
+      {/* 消息气泡 + 操作栏 */}
       <div
         className={cn(
           "flex flex-col gap-1 w-full max-w-none",
-          !isUser && "group", // 只有 AI 消息才加 group
+          !isUser && "group",
         )}
       >
+        {/* 消息气泡 */}
         <div
           className={cn(
             // 通用基础样式
@@ -60,7 +60,6 @@ export function MessageContent({
             "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
             // 对齐控制：用户气泡靠右，AI靠左
             isUser ? "ml-auto" : "mr-auto",
-            // 豆包同款样式
             isUser
               ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
               : "bg-transparent border-none text-foreground shadow-none",
@@ -75,7 +74,7 @@ export function MessageContent({
           )}
         </div>
 
-        {/* ✅ 操作栏：确保它有独立的一行，宽度足够，对齐方式和气泡一致 */}
+        {/*操作栏*/}
         {!isUser && !isStreaming && !isGeneratingImage && (
           <div
             className={cn(

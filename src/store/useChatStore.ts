@@ -1,4 +1,3 @@
-// src/store/useChatStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
@@ -622,6 +621,7 @@ export const useChatStore = create<ChatStore>()(
         }));
       },
     }),
+    // zustand数据持久化配置
     {
       // 1. localStorage 的键名
       name: "ai-chat-conversations",

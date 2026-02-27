@@ -1,7 +1,4 @@
-// src/api/chat.ts
 // 统一管理所有聊天相关的API请求，不用在store里写请求逻辑
-import type { Message } from "@/store/types";
-
 /**
  * 调用AI生成会话标题
  * @param userMessage 用户的第一条提问

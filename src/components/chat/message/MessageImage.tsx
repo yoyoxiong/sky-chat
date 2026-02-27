@@ -1,4 +1,3 @@
-// src/components/chat/MessageImage.tsx
 "use client";
 
 import { Loader2, AlertCircle, X } from "lucide-react";

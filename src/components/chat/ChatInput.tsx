@@ -1,4 +1,3 @@
-// src/components/chat/ChatInput.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -81,15 +80,15 @@ export function ChatInput({
 
   return (
     <div className="border-t border-border bg-card p-3 md:p-4">
-      {/* 🔧 核心：外层容器固定最大宽度，不会被内容撑开，布局完全锁死 */}
       <div className="mx-auto max-w-3xl w-full">
-        {/* 选中的文件列表：和豆包一致，在输入框上方平铺，不会挤压输入框 */}
+        {/*输入模式切换按钮 */}
         <InputMode mode={mode} setMode={setMode} />
+        {/* 文件列表：只有当有文件时才显示，显示在输入框上方 */}
         <InputFileList selectedFiles={selectedFiles} removeFile={removeFile} />
-        {/* 🔧 核心：输入框+按钮行，宽度100%固定，布局永远不会动 */}
+
         <div className="flex w-full gap-3 items-end">
           <InputFileSelector disabled={disabled} isGenerating={isGenerating} />
-          {/* 输入框：flex-1占满剩余空间，不会被挤压 */}
+          {/* 输入框*/}
           <Input
             ref={inputRef}
             value={input}

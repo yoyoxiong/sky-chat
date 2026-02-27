@@ -1,4 +1,3 @@
-// src/components/chat/MessageAttachments.tsx
 "use client";
 
 import { FileMeta } from "@/store/types";
@@ -8,7 +7,9 @@ interface MessageAttachmentsProps {
   fileAttachments?: FileMeta[];
 }
 
-export function MessageAttachments({ fileAttachments }: MessageAttachmentsProps) {
+export function MessageAttachments({
+  fileAttachments,
+}: MessageAttachmentsProps) {
   if (!fileAttachments || fileAttachments.length === 0) {
     return null;
   }

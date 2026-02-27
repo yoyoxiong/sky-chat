@@ -1,7 +1,6 @@
-// src/app/(chat)/layout.tsx
 "use client";
 import { Button } from "@/components/ui/button";
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +13,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PlusIcon } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
-import type { Conversation } from "@/store/types";
-// ✅ 1. 删除 Tooltip 相关导入
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ConversationList } from "@/components/chat/conversation/ConversationList";
 
@@ -27,7 +24,6 @@ export default function ChatLayout({
   // 控制移动端侧边栏显示/隐藏
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // 从store解构数据和方法
   const {
     conversations,
     activeConversationId,

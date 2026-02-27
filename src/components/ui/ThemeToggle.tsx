@@ -1,13 +1,8 @@
-// 必须加：标记为客户端组件
 "use client";
 
-// 1. 导入React核心（必须写，避免JSX解析异常）
 import * as React from "react";
-// 2. 导入主题控制Hook
 import { useTheme } from "next-themes";
-// 3. 导入你项目里的Button组件（路径和你项目完全匹配）
 import { Button } from "@/components/ui/button";
-// 4. 导入图标（你项目已经装了lucide-react，直接用）
 import { Sun, Moon } from "lucide-react";
 
 // 主题切换按钮组件

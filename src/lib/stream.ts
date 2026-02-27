@@ -22,7 +22,7 @@ export async function fetchStream(
     console.log("用户主动停止了流式生成");
   };
 
-  // 2. 把停止函数传给外部（你的核心思路！）
+  // 2. 把停止函数传给外部
   if (onStop) {
     onStop(stopStream);
   }
@@ -39,7 +39,7 @@ export async function fetchStream(
 
     // 3. 循环读取流，但增加「是否已停止」的判断
     while (true) {
-      // 👉 关键：如果用户点击了停止，直接退出循环，终止读取
+      //如果用户点击了停止，直接退出循环，终止读取
       if (isStopped) {
         // 主动取消阅读器，释放资源
         await reader.cancel();

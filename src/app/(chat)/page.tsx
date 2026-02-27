@@ -15,8 +15,6 @@ export default function ChatPage() {
     stopGenerating,
     isSelectionMode,
     selectedMessageIds,
-    toggleSelectionMode,
-    toggleMessageSelection,
     clearSelection,
     deleteSelectedMessages,
   } = useChatStore();
@@ -114,7 +112,6 @@ export default function ChatPage() {
           </button>
         </div>
       )}
-
       {!isSelectionMode && (
         <div className="hidden md:block border-b bg-card border-border px-6 py-3 shrink-0">
           <h2 className="font-semibold text-card-foreground">
@@ -122,6 +119,7 @@ export default function ChatPage() {
           </h2>
         </div>
       )}
+
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -142,7 +140,7 @@ export default function ChatPage() {
             {virtualizer.getVirtualItems().map((virtualItem) => (
               <div
                 key={virtualItem.key}
-                // ✅ 修正：直接用 virtualizer.measureElement 绑定 ref
+                // 直接用 virtualizer.measureElement 绑定 ref
                 ref={virtualizer.measureElement}
                 data-index={virtualItem.index}
                 style={{
@@ -169,7 +167,6 @@ export default function ChatPage() {
           </button>
         )}
       </div>
-
       <div className="shrink-0">
         <ChatInput
           disabled={isStreaming}

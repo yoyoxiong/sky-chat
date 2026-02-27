@@ -1,4 +1,3 @@
-// src/hooks/useFileUpload.ts
 import { useState } from "react";
 import type { SelectedFile, FileMeta } from "@/store/types";
 

@@ -1,11 +1,6 @@
-// 🔑 告诉Next.js这是一个客户端组件，能操作浏览器
 "use client";
 
-// 导入React核心
-import * as React from "react";
-// 导入主题核心Provider
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-// ✅ 正确的类型导入：直接从根目录导入，不用深层dist路径
 import type { ThemeProviderProps } from "next-themes";
 
 // 封装我们自己的主题Provider，给整个项目用

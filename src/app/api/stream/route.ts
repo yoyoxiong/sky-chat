@@ -1,7 +1,6 @@
-// src/app/api/stream/route.ts
 import { NextResponse } from "next/server";
 
-// 对接 DeepSeek 大模型（兼容 OpenAI 格式）
+// 流式输出api，对接 DeepSeek 大模型（兼容 OpenAI 格式）
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -17,21 +16,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // 调用 DeepSeek 流式接口
     const aiResponse = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`, // DeepSeek 鉴权和 OpenAI 一致
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // DeepSeek 通用对话模型（必选）
+        model: "deepseek-chat",
         // 可选模型：deepseek-coder（代码专用）、deepseek-chat（通用对话）
         messages: messages, // 对话历史（上下文）
         stream: true, // 开启流式输出
         temperature: 0.7, // 回答随机性（0-1，越小越严谨）
         max_tokens: 2000, // 最大回复长度
-        top_p: 0.95, // 采样策略，保持默认即可
+        top_p: 0.95, // 采样策略
       }),
     });
 
@@ -53,20 +51,20 @@ export async function POST(req: Request) {
           if (done) break;
 
           // 解析二进制流 → 字符串
-          buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true }); //缓存区
+          // 按行分割缓存区得到lines数组（SSE 数据以换行分隔）
           const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // 缓存不完整行
+          buffer = lines.pop() || ""; // 删除最后一行（可能不完整）
 
           // 遍历解析每一行 SSE 数据
           for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
-
+            //去掉data: 前缀
             const dataStr = trimmedLine.slice(6);
             if (dataStr === "[DONE]") continue; // 流结束标记
 
             try {
-              // DeepSeek 返回格式和 OpenAI 完全一致
               const data = JSON.parse(dataStr);
               const content = data.choices?.[0]?.delta?.content || "";
 

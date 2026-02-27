@@ -1,4 +1,3 @@
-// src/components/chat/MessageActions.tsx
 "use client";
 import { useChatStore } from "@/store/useChatStore";
 import { useState } from "react";
@@ -28,7 +27,6 @@ export function MessageActions({
   isStreaming = false,
   hasStopFunction = false,
   onRegenerate,
-  onDelete,
 }: MessageActionsProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);

@@ -1,11 +1,10 @@
-// src/components/chat/ChatMessage.tsx
 "use client";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/store/useChatStore";
 import type { Message } from "@/store/types";
 import { MessageContent } from "./message/MessageContent";
-import { CheckCircle2, Circle } from "lucide-react"; // 引入复选框图标
+import { CheckCircle2, Circle } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -41,7 +40,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           isUser ? "justify-end" : "justify-start",
         )}
       >
-        {/*选择模式下显示复选框（只在AI消息左边显示，或者两边都显示，这里选两边都显示） */}
+        {/*选择模式下显示复选框 */}
         {isSelectionMode && (
           <button
             type="button"
@@ -51,7 +50,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
             }}
             className={cn(
               "mt-2.5 shrink-0 transition-all duration-200",
-              // 给用户消息的复选框也留位置，保持对齐
               isUser ? "order-2" : "order-1",
             )}
           >
