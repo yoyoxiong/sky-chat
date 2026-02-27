@@ -1,10 +1,8 @@
 import { useState } from "react";
 import type { SelectedFile, FileMeta } from "@/store/types";
+import { MAX_FILE_SIZE } from "@/constants";
 
 // 常量配置，统一管理
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const ALLOWED_FILE_EXTENSIONS =
-  ".txt,.md,.c,.cpp,.js,.ts,.jsx,.tsx,.html,.css,.java,.py,.go,.rs,.json";
 
 export function useFileUpload() {
   // 选中的文件列表

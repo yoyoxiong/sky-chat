@@ -8,15 +8,11 @@ import { MessageAttachments } from "./MessageAttachments";
 
 interface MessageContentProps {
   message: Message;
-  onRegenerate: (messageId: string) => void;
-  onDelete: (messageId: string) => Promise<void>;
   hasStopFunction: boolean;
 }
 
 export function MessageContent({
   message,
-  onRegenerate,
-  onDelete,
   hasStopFunction,
 }: MessageContentProps) {
   const isUser = message.role === "user";
@@ -82,8 +78,6 @@ export function MessageContent({
                 content={message.content}
                 isStreaming={isStreaming}
                 hasStopFunction={hasStopFunction}
-                onRegenerate={onRegenerate}
-                onDelete={onDelete}
                 isLastestMessage={isLatestMessage}
                 isUser={isUser}
               />

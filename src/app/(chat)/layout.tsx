@@ -15,7 +15,7 @@ import { CircleFadingPlus } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ConversationList } from "@/components/chat/conversation/ConversationList";
-import { sidebar } from "@/components/ui/button";
+
 export default function ChatLayout({
   children,
 }: {
@@ -134,7 +134,7 @@ export default function ChatLayout({
       </aside>
 
       {/* 聊天主内容区 */}
-      <main className="flex-1 flex flex-col bg-[] overflow-hidden">
+      <main className="flex-1 flex flex-col bg-background overflow-hidden">
         {/* 移动端顶部导航：仅手机显示，显示当前会话标题 */}
         <div className="md:hidden border-b border-border p-3 flex items-center gap-3 shrink-0">
           <button
@@ -169,7 +169,13 @@ export default function ChatLayout({
       {/* 删除会话确认对话框 */}
       <AlertDialog
         open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          // 弹窗关闭时，自动重置要删除的会话ID
+          if (!open) {
+            setConvIdToDelete(null);
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -191,7 +197,7 @@ export default function ChatLayout({
                 if (convIdToDelete) {
                   deleteConversation(convIdToDelete);
                 }
-                setConvIdToDelete(null);
+
                 setIsDeleteDialogOpen(false);
               }}
               className="bg-red-600 hover:bg-red-700"

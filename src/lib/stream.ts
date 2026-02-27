@@ -14,12 +14,16 @@ export async function fetchStream(
   onComplete?: () => void,
   onStop?: (stopFn: () => void) => void,
 ) {
-  // 1. 创建一个「取消控制器」，用来中断流的读取
+  // 1. 创建AbortController
+  const controller = new AbortController();
+  const signal = controller.signal;
+
   let isStopped = false;
-  // 定义停止函数：标记为已停止，并触发后续清理
+  // 调用abort取消请求
   const stopStream = () => {
     isStopped = true;
-    console.log("用户主动停止了流式生成");
+    controller.abort(); // 取消fetch请求
+    console.log("用户主动停止了流式生成，网络请求已取消");
   };
 
   // 2. 把停止函数传给外部
@@ -28,7 +32,7 @@ export async function fetchStream(
   }
 
   try {
-    const response = await fetchChatStream(body);
+    const response = await fetchChatStream(body, { signal });
 
     if (!response.ok || !response.body) {
       throw new Error("请求失败");
@@ -57,7 +61,12 @@ export async function fetchStream(
       onChunk(chunk);
     }
   } catch (error) {
-    console.error("流式请求出错：", error);
+    // 捕获abort错误，避免控制台报错
+    if (error instanceof Error && error.name === "AbortError") {
+      console.log("请求已被用户取消");
+    } else {
+      console.error("流式请求出错：", error);
+    }
   } finally {
     // 不管是正常结束还是主动停止，都执行完成回调
     onComplete?.();

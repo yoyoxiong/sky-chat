@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquareIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/store/types";

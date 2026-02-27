@@ -13,7 +13,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin", "latin-ext"],
 });
-// 修改点1：把元数据改成我们项目的信息
 export const metadata: Metadata = {
   title: "Sky-Chat AI 聊天助手",
   description: "全栈AI聊天应用，基于Next.js开发",

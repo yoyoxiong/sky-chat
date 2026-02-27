@@ -1,7 +1,6 @@
 "use client";
 
-import { Loader2, AlertCircle, X } from "lucide-react";
-// 把原来的导入删掉，换成我们自己写的
+import { Loader2, AlertCircle } from "lucide-react";
 import { ImagePreviewDialog } from "./ImagePreviewDialog";
 import { useState } from "react";
 

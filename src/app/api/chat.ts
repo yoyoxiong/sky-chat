@@ -19,10 +19,14 @@ export const generateChatTitle = async (userMessage: string) => {
  * @param messages 对话历史
  * @returns 流式响应对象
  */
-export const fetchChatStream = async (body: Record<string, any>) => {
+export const fetchChatStream = async (
+  body: Record<string, any>,
+  options?: { signal?: AbortSignal },
+) => {
   return fetch("/api/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal: options?.signal, // 传递signal
   });
 };

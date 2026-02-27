@@ -13,7 +13,6 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const {
     regenerateMessage,
-    deleteMessage,
     currentStopFn,
     isSelectionMode,
     selectedMessageIds,
@@ -69,12 +68,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? "order-1" : "order-2",
           )}
         >
-          <MessageContent
-            message={message}
-            onRegenerate={regenerateMessage}
-            onDelete={deleteMessage}
-            hasStopFunction={!!currentStopFn}
-          />
+          <MessageContent message={message} hasStopFunction={!!currentStopFn} />
         </div>
       </div>
     </div>

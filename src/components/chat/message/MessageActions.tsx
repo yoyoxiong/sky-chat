@@ -20,8 +20,6 @@ interface MessageActionsProps {
   isLastestMessage?: boolean;
   hasStopFunction?: boolean;
   isUser?: boolean;
-  onRegenerate: (messageId: string) => void;
-  onDelete: (messageId: string) => Promise<void>;
 }
 
 export function MessageActions({
@@ -31,12 +29,12 @@ export function MessageActions({
   isLastestMessage = false,
   hasStopFunction = false,
   isUser = false,
-  onRegenerate,
 }: MessageActionsProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { toggleSelectionMode, toggleMessageSelection } = useChatStore();
+  const { toggleSelectionMode, toggleMessageSelection, regenerateMessage } =
+    useChatStore();
 
   // 复制消息内容
   const handleCopy = async () => {
@@ -52,7 +50,7 @@ export function MessageActions({
   // 重新生成回复
   const handleRegenerate = () => {
     if (isStreaming || hasStopFunction) return;
-    onRegenerate(messageId);
+    regenerateMessage(messageId);
   };
 
   // 语音朗读/停止

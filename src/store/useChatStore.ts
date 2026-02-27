@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create, batch } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
 import { fetchStream } from "@/lib/stream";
@@ -10,7 +10,6 @@ interface ChatStore {
   currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
   isLatestMessage: boolean;
   regenerateMessage: (messageId: string) => Promise<void>; // 重新生成
-  deleteMessage: (messageId: string) => Promise<void>; // 删除消息
   createNewConversation: () => void;
   setActiveConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
@@ -25,6 +24,7 @@ interface ChatStore {
   toggleMessageSelection: (messageId: string) => void;
   clearSelection: () => void;
   deleteSelectedMessages: () => Promise<void>; // 批量删除
+  getOrCreateActiveConversation: () => Conversation | undefined; // 新增：获取或创建激活会话
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -107,6 +107,21 @@ export const useChatStore = create<ChatStore>()(
           }),
         }));
       },
+      getOrCreateActiveConversation: () => {
+        const state = get();
+        // 有激活会话则直接返回
+        if (state.activeConversationId) {
+          return state.conversations.find(
+            (c) => c.id === state.activeConversationId,
+          );
+        }
+        // 没有则创建新会话
+        state.createNewConversation();
+        const newState = get();
+        return newState.conversations.find(
+          (c) => c.id === newState.activeConversationId,
+        );
+      },
 
       // 发送消息 + 流式获取AI回复
       sendMessage: async (
@@ -114,22 +129,14 @@ export const useChatStore = create<ChatStore>()(
         fileAttachments: FileMeta[] = [],
       ) => {
         const state = get();
-        // 边界判断：没有会话时先创建
-        if (!state.activeConversationId) {
-          state.createNewConversation();
-          const newState = get();
-          if (!newState.activeConversationId) return;
-        }
         // 发送新消息前，先停止上一次的生成
         if (state.currentStopFn) {
           state.stopGenerating();
         }
-
-        const currentState = get();
-        const currentConv = currentState.conversations.find(
-          (c) => c.id === currentState.activeConversationId,
-        );
+        // 边界判断：没有会话时先创建
+        const currentConv = state.getOrCreateActiveConversation();
         if (!currentConv) return;
+
         // 从完整Prompt里提取用户的纯提问，只用这个生成标题
         const userPureInput = content.split("\n\n用户的问题：")[1] || content;
         // 判断是不是第一句话（触发自动生成标题的条件）
@@ -224,25 +231,25 @@ export const useChatStore = create<ChatStore>()(
           },
           // 每收到一段数据，就追加到AI消息里
           (chunk) => {
-            set((state) => ({
-              conversations: state.conversations.map((conv) => {
-                if (conv.id === state.activeConversationId) {
-                  return {
-                    ...conv,
-                    messages: conv.messages.map((msg) => {
-                      if (msg.id === aiMessageId) {
-                        return {
-                          ...msg,
-                          content: msg.content + chunk,
-                        };
-                      }
-                      return msg;
-                    }),
-                  };
-                }
-                return conv;
-              }),
-            }));
+            batch(() => {
+              // 包裹batch，合并多次set
+              set((state) => ({
+                conversations: state.conversations.map((conv) => {
+                  if (conv.id === state.activeConversationId) {
+                    return {
+                      ...conv,
+                      messages: conv.messages.map((msg) => {
+                        if (msg.id === aiMessageId) {
+                          return { ...msg, content: msg.content + chunk };
+                        }
+                        return msg;
+                      }),
+                    };
+                  }
+                  return conv;
+                }),
+              }));
+            });
           },
           // 流结束时，标记生成完成,清空停止函数
           () => {
@@ -275,17 +282,9 @@ export const useChatStore = create<ChatStore>()(
       },
       // 文生图核心方法
       generateImage: async (prompt: string) => {
-        //const state = get();
-        //1. 没有选中会话时自动新建，和聊天逻辑一致
-        // if (!state.activeConversationId) {
-        //   state.createNewConversation();
-        //   const newState = get();
-        //   if (!newState.activeConversationId) return;
-        // }
-        const currentState = get();
-        const currentConv = currentState.conversations.find(
-          (c) => c.id === currentState.activeConversationId,
-        );
+        const state = get();
+        // 边界判断：没有会话时先创建
+        const currentConv = state.getOrCreateActiveConversation();
         if (!currentConv) return;
 
         // 2. 第一条消息自动生成标题，和聊天逻辑一致
@@ -312,6 +311,8 @@ export const useChatStore = create<ChatStore>()(
           content: "",
           timestamp: new Date(),
           isGeneratingImage: true, // 标记正在生成图片
+          generateImageError: undefined, // 显式清空
+          imageUrl: undefined, // 显式清空
         };
 
         // 5. 先把两条消息更新到store，UI立刻显示，给用户即时反馈
@@ -401,6 +402,7 @@ export const useChatStore = create<ChatStore>()(
                       return {
                         ...msg,
                         isGeneratingImage: false,
+                        generateImageError: undefined, // 清空错误
                         imageUrl: result.imageUrl,
                         content: "图片生成完成，你可以点击图片查看大图~",
                       };
@@ -540,52 +542,7 @@ export const useChatStore = create<ChatStore>()(
         );
       },
 
-      // 删除单条消息（同时删除对应的问答对，符合主流交互）
-      deleteMessage: async (messageId: string) => {
-        const state = get();
-        if (!state.activeConversationId) return;
-        const currentConv = state.conversations.find(
-          (c) => c.id === state.activeConversationId,
-        );
-        if (!currentConv) return;
-
-        const messageIndex = currentConv.messages.findIndex(
-          (msg) => msg.id === messageId,
-        );
-        if (messageIndex === -1) return;
-
-        const targetMessage = currentConv.messages[messageIndex];
-        const messagesToDelete = [messageIndex];
-
-        // 如果是AI回复，同时删除它对应的上一条用户提问
-        if (targetMessage.role === "assistant" && messageIndex > 0) {
-          messagesToDelete.push(messageIndex - 1);
-        }
-        // 如果是用户提问，同时删除它对应的下一条AI回复
-        if (
-          targetMessage.role === "user" &&
-          messageIndex < currentConv.messages.length - 1
-        ) {
-          messagesToDelete.push(messageIndex + 1);
-        }
-
-        // 去重+倒序删除，避免索引错乱
-        const uniqueIndexes = [...new Set(messagesToDelete)].sort(
-          (a, b) => b - a,
-        );
-
-        set((state) => ({
-          conversations: state.conversations.map((conv) => {
-            if (conv.id === state.activeConversationId) {
-              const newMessages = [...conv.messages];
-              uniqueIndexes.forEach((index) => newMessages.splice(index, 1));
-              return { ...conv, messages: newMessages };
-            }
-            return conv;
-          }),
-        }));
-      },
-      // 切换选择模式
+      // 切换选择批量删除模式
       toggleSelectionMode: () =>
         set((state) => ({
           isSelectionMode: !state.isSelectionMode,

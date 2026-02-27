@@ -4,13 +4,14 @@ import { useState, useRef, useEffect, useId } from "react";
 import type { FileMeta } from "@/store/types";
 import { useChatStore } from "@/store/useChatStore";
 
-import { useFileUpload, ALLOWED_FILE_EXTENSIONS } from "@/hooks/useFileUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import { InputMode } from "./input/InputMode";
 import { InputFileList } from "./input/InputFileList";
 import { InputButton } from "./input/InputButton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PaperclipIcon } from "lucide-react";
+import { ALLOWED_FILE_EXTENSIONS } from "@/constants";
 
 interface ChatInputProps {
   disabled?: boolean;

@@ -17,7 +17,6 @@ export default function ChatPage() {
     selectedMessageIds,
     clearSelection,
     deleteSelectedMessages,
-    createNewConversation,
   } = useChatStore();
   const activeConversation = conversations.find(
     (conv) => conv.id === activeConversationId,
