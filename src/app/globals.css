@@ -4,8 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 @layer base {
+  * {
+    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50;
+  }
   body {
-    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+    @apply bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 text-gray-900 dark:text-gray-100;
   }
 }
 
@@ -117,15 +121,4 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    @apply bg-background text-foreground;
-  }
 }

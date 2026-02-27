@@ -18,24 +18,22 @@ export function InputButton({
   selectedFiles,
 }: InputButtonProps) {
   return isGenerating ? (
-    // ✅ 停止生成按钮：圆形、红色、只有停止图标
     <Button
       type="button"
       onClick={onStopGenerating}
       variant="destructive"
-      className="h-10 w-10 rounded-full p-0 shrink-0 shadow-md hover:shadow-lg transition-all"
+      className="h-8 w-8 rounded-full p-0 shrink-0"
     >
-      <CircleStopIcon className="h-5 w-5" />
+      <CircleStopIcon className="h-4 w-4" />
     </Button>
   ) : (
-    // ✅ 发送按钮：圆形、品牌蓝、只有纸飞机图标
     <Button
       type="submit"
       onClick={handleSend}
       disabled={!input.trim() && selectedFiles.length === 0}
-      className="h-10 w-10 rounded-full p-0 shrink-0 shadow-md hover:shadow-lg transition-all bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:shadow-none"
+      className="h-8 w-8 rounded-full p-0 shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
     >
-      <SendIcon className="h-5 w-5" />
+      <SendIcon className="h-4 w-4" />
     </Button>
   );
 }

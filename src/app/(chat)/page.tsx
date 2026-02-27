@@ -90,7 +90,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       {isSelectionMode && (
-        <div className="border-b bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
+        <div className=" bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <button
               onClick={clearSelection}
@@ -113,7 +113,7 @@ export default function ChatPage() {
         </div>
       )}
       {!isSelectionMode && (
-        <div className="hidden md:block border-b bg-card border-border px-6 py-3 shrink-0">
+        <div className="hidden md:block bg-card px-6 py-3 shrink-0">
           <h2 className="font-semibold text-card-foreground">
             {activeConversation?.title}
           </h2>
