@@ -21,9 +21,10 @@ export function InputFileList({
             <button
               type="button"
               onClick={() => removeFile(file.id)}
-              className="ml-1 rounded-full hover:bg-background p-0.5 shrink-0"
+              className="ml-1 rounded-full hover:bg-background p-0.5 shrink-0 flex items-center gap-1"
             >
-              <X className="h-3 w-3" />
+              <FileTextIcon className="h-4 w-4" />
+              <XIcon className="h-3 w-3" />
             </button>
           </div>
         ))}

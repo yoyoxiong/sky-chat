@@ -31,7 +31,7 @@ export function InputButton({
       type="submit"
       onClick={handleSend}
       disabled={!input.trim() && selectedFiles.length === 0}
-      className="h-8 w-8 rounded-full p-0 shrink-0 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed"
+      className="h-8 w-8 rounded-full p-0 shrink-0 bg-[#3964fe] hover:bg-primary/90 disabled:bg-[#b0c1ff] disabled:cursor-not-allowed"
     >
       <SendIcon className="h-4 w-4" />
     </Button>

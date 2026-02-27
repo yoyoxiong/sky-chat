@@ -22,10 +22,9 @@ export function MessageContent({
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isGeneratingImage = message.isGeneratingImage;
-  const isLatestMessage = message.isLatestMessage; // 是否是最新消息
+  const isLatestMessage = message.isLatestMessage;
 
   return (
-    // 外层容器：用户消息整体右对齐，AI左对齐
     <div
       className={cn(
         "flex flex-col w-full",
@@ -45,27 +44,17 @@ export function MessageContent({
         imageAlt={message.content}
       />
 
-      {/* 消息气泡 + 操作栏 */}
-      <div
-        className={cn(
-          "flex flex-col gap-1 w-full max-w-none",
-          !isUser && "group",
-        )}
-      >
+      {/* 消息气泡 + 操作栏 外层容器 */}
+      <div className="flex flex-col gap-1 w-full max-w-none group">
         {/* 消息气泡 */}
         <div
           className={cn(
-            // 通用基础样式
-            "rounded-2xl px-4 py-2.5 text-sm md:text-base leading-relaxed",
-            // 宽度控制：最小宽度适配内容，最大宽度限制，防止被压缩
+            "rounded-2xl px-4 py-2.5 text-sm md:text-base leading-relaxed flex flex-col justify-center",
             "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
-            // 对齐控制：用户气泡靠右，AI靠左
             isUser ? "ml-auto" : "mr-auto",
             isUser
               ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-[#2c2c2e] text-gray-900 dark:text-white shadow-sm"
-              : "bg-transparent border-none text-foreground shadow-none",
-            // Markdown样式
-            "prose prose-xs md:prose-sm dark:prose-invert max-w-none",
+              : "bg-transparent border-none text-foreground shadow-none prose prose-xs md:prose-sm dark:prose-invert max-w-none prose-p:my-0",
           )}
         >
           <MarkdownRenderer content={message.content} isUser={isUser} />
@@ -75,11 +64,11 @@ export function MessageContent({
           )}
         </div>
 
-        {/*操作栏*/}
-        {!isUser && !isStreaming && !isGeneratingImage && (
+        {/* 操作栏：用户/AI都显示，流式/生成图片时隐藏 */}
+        {!isStreaming && !isGeneratingImage && (
           <div
             className={cn(
-              "w-full flex group",
+              "w-full flex",
               isUser ? "justify-end" : "justify-start",
             )}
           >
@@ -96,6 +85,7 @@ export function MessageContent({
                 onRegenerate={onRegenerate}
                 onDelete={onDelete}
                 isLastestMessage={isLatestMessage}
+                isUser={isUser}
               />
             </div>
           </div>

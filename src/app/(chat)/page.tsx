@@ -17,15 +17,14 @@ export default function ChatPage() {
     selectedMessageIds,
     clearSelection,
     deleteSelectedMessages,
+    createNewConversation,
   } = useChatStore();
   const activeConversation = conversations.find(
     (conv) => conv.id === activeConversationId,
   );
   const messages = activeConversation?.messages || [];
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-
   // 核心：初始化虚拟列表，开启动态高度
   const virtualizer = useVirtualizer({
     count: messages.length,
@@ -76,12 +75,25 @@ export default function ChatPage() {
 
   if (!activeConversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center w-full overflow-hidden">
-        <div className="text-center space-y-4 px-4">
-          <h1 className="text-3xl font-bold text-foreground">
-            你好，我是 Sky-Chat
-          </h1>
-          <p className="text-muted-foreground">点击左侧「新建聊天」开始对话</p>
+      <div className="flex flex-col h-full w-full overflow-hidden">
+        {/* 欢迎语区域：占据剩余空间，垂直水平居中 */}
+        <div className="flex-1 flex flex-col items-center justify-center w-full overflow-hidden">
+          <div className="text-center space-y-4 px-4">
+            <h1 className="text-3xl font-bold text-foreground">
+              你好，我是 Sky-Chat
+            </h1>
+            <p className="text-muted-foreground">有什么我能帮您吗</p>
+          </div>
+        </div>
+
+        {/* 输入框区域：固定在底部 */}
+        <div className="shrink-0">
+          <ChatInput
+            disabled={isStreaming}
+            isGenerating={isStreaming}
+            onStopGenerating={stopGenerating}
+            onSendMessage={sendMessage}
+          />
         </div>
       </div>
     );

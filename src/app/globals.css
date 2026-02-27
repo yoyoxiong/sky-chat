@@ -62,7 +62,7 @@
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
+  --primary: oklch(0.45 0.18 260);
   --primary-foreground: oklch(0.984 0.003 247.858);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
@@ -100,7 +100,7 @@
   --popover-foreground: oklch(0.96 0 0);
 
   /* 主色：DeepSeek同款深蓝色，用于发送按钮、高亮 */
-  --primary: oklch(0.45 0.18 260);
+  --primary: oklch(0.704 0.04 256.788);
   --primary-foreground: oklch(1 0 0);
 
   /* 次要色/hover背景：淡深灰，用于按钮hover、选中项 */

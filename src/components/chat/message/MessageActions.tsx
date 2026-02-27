@@ -19,6 +19,7 @@ interface MessageActionsProps {
   isStreaming?: boolean;
   isLastestMessage?: boolean;
   hasStopFunction?: boolean;
+  isUser?: boolean;
   onRegenerate: (messageId: string) => void;
   onDelete: (messageId: string) => Promise<void>;
 }
@@ -29,12 +30,14 @@ export function MessageActions({
   isStreaming = false,
   isLastestMessage = false,
   hasStopFunction = false,
+  isUser = false,
   onRegenerate,
 }: MessageActionsProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toggleSelectionMode, toggleMessageSelection } = useChatStore();
+
   // 复制消息内容
   const handleCopy = async () => {
     try {
@@ -59,14 +62,12 @@ export function MessageActions({
       return;
     }
 
-    // 如果正在朗读，停止
     if (isSpeaking) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
 
-    // 开始朗读
     const utterance = new SpeechSynthesisUtterance(content);
     utterance.lang = "zh-CN";
     utterance.rate = 1.2;
@@ -86,7 +87,7 @@ export function MessageActions({
 
   // 分享消息
   const handleShare = async () => {
-    const shareText = `AI：${content}`;
+    const shareText = isUser ? content : `AI：${content}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -103,7 +104,6 @@ export function MessageActions({
       }
     }
 
-    // 兜底：复制分享内容到剪贴板
     try {
       await navigator.clipboard.writeText(shareText);
       alert("对话内容已复制到剪贴板，快去分享吧~");
@@ -123,18 +123,14 @@ export function MessageActions({
     <div
       className={cn(
         "flex items-center gap-1 ml-1 transition-opacity",
-        // 2. 移动端：一直显示
         "opacity-100",
-        // 3. 桌面端：核心逻辑
-        //    - 如果是最新消息 且 不在流式输出：显示
-        //    - 否则：只有 hover 才显示
         "md:opacity-0 md:group-hover:opacity-100",
         isLastestMessage &&
           !isStreaming &&
           "md:opacity-100 md:group-hover:opacity-100",
       )}
     >
-      {/* 复制按钮 */}
+      {/* 复制按钮：用户/AI都显示 */}
       <button
         onClick={handleCopy}
         className="p-1.5 md:hover:bg-accent rounded-md transition-colors"
@@ -147,49 +143,55 @@ export function MessageActions({
         )}
       </button>
 
-      {/* 重新生成按钮 */}
-      <button
-        onClick={handleRegenerate}
-        disabled={!!hasStopFunction}
-        className="p-1.5 md:hover:bg-accent rounded-md transition-colors disabled:opacity-50"
-        title="重新生成"
-      >
-        <RotateCw className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
-      </button>
+      {/* 重新生成按钮：仅AI显示 */}
+      {!isUser && (
+        <button
+          onClick={handleRegenerate}
+          disabled={!!hasStopFunction}
+          className="p-1.5 md:hover:bg-accent rounded-md transition-colors disabled:opacity-50"
+          title="重新生成"
+        >
+          <RotateCw className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
+        </button>
+      )}
 
-      {/* 朗读按钮 */}
-      <button
-        onClick={toggleSpeech}
-        className="p-1.5 md:hover:bg-accent rounded-md transition-colors"
-        title={isSpeaking ? "停止朗读" : "语音朗读"}
-      >
-        {isSpeaking ? (
-          <VolumeX className="w-3.5 h-3.5 text-red-500" />
-        ) : (
-          <Volume2 className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
-        )}
-      </button>
+      {/* 朗读按钮：仅AI显示 */}
+      {!isUser && (
+        <button
+          onClick={toggleSpeech}
+          className="p-1.5 md:hover:bg-accent rounded-md transition-colors"
+          title={isSpeaking ? "停止朗读" : "语音朗读"}
+        >
+          {isSpeaking ? (
+            <VolumeX className="w-3.5 h-3.5 text-red-500" />
+          ) : (
+            <Volume2 className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
+          )}
+        </button>
+      )}
 
-      {/* 分享按钮 */}
-      <button
-        onClick={handleShare}
-        className="p-1.5 md:hover:bg-accent rounded-md transition-colors"
-        title="分享对话"
-      >
-        <Share2 className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
-      </button>
+      {/* 分享按钮：仅AI显示 */}
+      {!isUser && (
+        <button
+          onClick={handleShare}
+          className="p-1.5 md:hover:bg-accent rounded-md transition-colors"
+          title="分享对话"
+        >
+          <Share2 className="w-3.5 h-3.5 text-muted-foreground md:hover:text-foreground" />
+        </button>
+      )}
 
-      {/* 删除按钮 */}
+      {/* 删除按钮：用户/AI都显示 */}
       <button
         onClick={() => handleDelete(messageId)}
         disabled={isDeleting || !!hasStopFunction}
-        className="p-1.5 md:hover:bg-red-50 md:hover:text-red-500 rounded-md transition-colors disabled:opacity-50"
+        className="p-1.5 md:hover:bg-red-50 dark:md:hover:bg-red-900/30 md:hover:text-red-500 rounded-md transition-colors disabled:opacity-50"
         title="删除对话"
       >
         {isDeleting ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+          <Trash2 className="w-3.5 h-3.5 text-muted-foreground md:hover:text-inherit" />
         )}
       </button>
     </div>

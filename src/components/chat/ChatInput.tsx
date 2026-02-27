@@ -32,7 +32,6 @@ export function ChatInput({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
-  const { handleFileSelect } = useFileUpload();
 
   const { generateImage } = useChatStore();
   const [mode, setMode] = useState<"chat" | "draw">("chat");
@@ -42,6 +41,7 @@ export function ChatInput({
     clearFiles,
     getFileContentBlock,
     getFileMeta,
+    handleFileSelect,
   } = useFileUpload();
   // textarea自动高度逻辑（输入内容自动撑开）
   const adjustTextareaHeight = () => {
@@ -63,14 +63,11 @@ export function ChatInput({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-  // 自动聚焦输入框
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
   const handleGenerateImage = () => {
     if (!input.trim()) return;
     generateImage(input);
     setInput("");
+    clearFiles();
   };
   // 发送消息核心逻辑
   const handleSend = () => {
@@ -92,10 +89,6 @@ export function ChatInput({
     // 清空状态
     setInput("");
     clearFiles();
-    // 发送后重置输入框高度
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-    }
   };
 
   // 回车发送
@@ -143,7 +136,6 @@ export function ChatInput({
             }
             disabled={disabled || isGenerating}
             rows={1}
-            // 新增：深色模式placeholder颜色更柔和
             className="w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm outline-none placeholder:text-muted-foreground dark:placeholder:text-muted-foreground/80 disabled:cursor-not-allowed"
           />
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2">

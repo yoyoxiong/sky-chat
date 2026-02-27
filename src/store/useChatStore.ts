@@ -114,6 +114,12 @@ export const useChatStore = create<ChatStore>()(
         fileAttachments: FileMeta[] = [],
       ) => {
         const state = get();
+        // 边界判断：没有会话时先创建
+        if (!state.activeConversationId) {
+          state.createNewConversation();
+          const newState = get();
+          if (!newState.activeConversationId) return;
+        }
         // 发送新消息前，先停止上一次的生成
         if (state.currentStopFn) {
           state.stopGenerating();
