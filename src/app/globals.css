@@ -11,6 +11,21 @@
     margin-bottom: 0.75rem !important;
   }
 }
+/* global.css 里的 hover 样式优化 */
+.new-conversation-btn:hover {
+  background-color: var(--new-conversation-btn) !important;
+  color: var(--new-conversation-btn-foreground) !important;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  transform: translateY(0); /* 轻微上浮 */
+  /* 或者加轻微放大：transform: scale(1.02); */
+}
+/* global.css 里的 hover 样式优化 */
+.new-conversation-btn {
+  background-color: var(--new-conversation-btn) !important;
+  color: var(--new-conversation-btn-foreground) !important;
+}
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -50,6 +65,10 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-new-conversation-btn: var(--new-conversation-btn);
+  --color-new-conversation-btn-foreground: var(
+    --new-conversation-btn-foreground
+  );
 }
 
 :root {
@@ -67,7 +86,7 @@
   --muted: oklch(0.968 0.007 247.896);
   --muted-foreground: oklch(0.554 0.046 257.417);
   --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --accent-foreground: #4a72fe;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
@@ -85,6 +104,8 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --new-conversation-btn: #ffffff;
+  --new-conversation-btn-foreground: #181a1e;
 }
 
 .dark {
@@ -103,8 +124,8 @@
   --secondary-foreground: oklch(0.96 0 0);
   --muted: oklch(0.23 0 0);
   --muted-foreground: oklch(0.72 0 0);
-  --accent: oklch(0.23 0 0);
-  --accent-foreground: oklch(0.96 0 0);
+  --accent: #353638;
+  --accent-foreground: #f5f5f5;
 
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(1 0 0);
@@ -127,4 +148,7 @@
   --sidebar-accent-foreground: oklch(0.96 0 0);
   --sidebar-border: oklch(0.23 0 0);
   --sidebar-ring: oklch(0.45 0.18 260);
+
+  --new-conversation-btn: #43454a;
+  --new-conversation-btn-foreground: #f9fafb;
 }

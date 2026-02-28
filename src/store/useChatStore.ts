@@ -1,4 +1,4 @@
-import { create, batch } from "zustand";
+import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
 import { fetchStream } from "@/lib/stream";
@@ -231,25 +231,22 @@ export const useChatStore = create<ChatStore>()(
           },
           // 每收到一段数据，就追加到AI消息里
           (chunk) => {
-            batch(() => {
-              // 包裹batch，合并多次set
-              set((state) => ({
-                conversations: state.conversations.map((conv) => {
-                  if (conv.id === state.activeConversationId) {
-                    return {
-                      ...conv,
-                      messages: conv.messages.map((msg) => {
-                        if (msg.id === aiMessageId) {
-                          return { ...msg, content: msg.content + chunk };
-                        }
-                        return msg;
-                      }),
-                    };
-                  }
-                  return conv;
-                }),
-              }));
-            });
+            set((state) => ({
+              conversations: state.conversations.map((conv) => {
+                if (conv.id === state.activeConversationId) {
+                  return {
+                    ...conv,
+                    messages: conv.messages.map((msg) => {
+                      if (msg.id === aiMessageId) {
+                        return { ...msg, content: msg.content + chunk };
+                      }
+                      return msg;
+                    }),
+                  };
+                }
+                return conv;
+              }),
+            }));
           },
           // 流结束时，标记生成完成,清空停止函数
           () => {

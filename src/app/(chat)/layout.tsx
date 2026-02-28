@@ -111,10 +111,10 @@ export default function ChatLayout({
               <ThemeToggle />
             </div>
           </div>
+
           {/* 新建聊天按钮 */}
           <Button
-            variant="sidebar"
-            className="w-full justify-center gap-2 cursor-pointer"
+            className="new-conversation-btn w-full justify-center gap-2 cursor-pointer rounded-xl shadow-sm hover:shadow-lg transition-all duration-200"
             onClick={() => {
               createNewConversation();
               setIsSidebarOpen(false);

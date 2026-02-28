@@ -46,9 +46,9 @@ export function ConversationItem({
       onClick={() => onSelectConversation?.(conv.id)}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "active:bg-accent cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group",
+        "cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group",
         isActive
-          ? "bg-blue-50 dark:bg-[#353638] dark:text-[#f5f5f5] text-[#4a72fe] font-medium"
+          ? "bg-accent text-accent-foreground font-medium"
           : "text-foreground hover:bg-accent",
       )}
     >

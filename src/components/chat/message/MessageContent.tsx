@@ -49,7 +49,7 @@ export function MessageContent({
             "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
             isUser ? "ml-auto" : "mr-auto",
             isUser
-              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-gray-100 dark:bg-[#2c2c2e] text-gray-900 dark:text-white shadow-sm"
+              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-accent text-foreground shadow-sm"
               : "bg-transparent border-none text-foreground shadow-none prose prose-xs md:prose-sm dark:prose-invert max-w-none prose-p:my-0",
           )}
         >

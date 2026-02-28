@@ -110,7 +110,7 @@ export function ChatInput({
           className={cn(
             "relative w-full rounded-2xl border border-border transition-all duration-200",
             // 浅色模式保持原来的样式，深色模式用DeepSeek同款输入框背景
-            "bg-white dark:bg-input",
+            "bg-card",
             // 聚焦效果：深色模式下边框高亮
             "focus-within:border-primary/50 focus-within:shadow-md",
             disabled && "opacity-60 cursor-not-allowed",
