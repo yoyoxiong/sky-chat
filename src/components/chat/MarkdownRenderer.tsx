@@ -2,6 +2,7 @@
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useTheme } from "next-themes"; // 假设你用 next-themes
 import type { CodeComponentProps } from "react-markdown/lib/ast-to-react";
 import { cn } from "@/lib/utils";
 // 1. 导入需要的依赖
@@ -12,6 +13,25 @@ interface MarkdownRendererProps {
   content: string;
   isUser: boolean;
 }
+const customDarkTheme = {
+  'pre[class*="language-"]': {
+    background: "#f3f4f6", // 纯深灰背景，去掉蓝色感
+    color: "#252525",
+    padding: "1rem",
+    borderRadius: "0.5rem",
+  },
+  'code[class*="language-"]': {
+    background: "#f3f4f6",
+    color: "#252525",
+  },
+  comment: { color: "#6db06c" },
+  keyword: { color: "#ae3bad" },
+  string: { color: "#6db06c" },
+  number: { color: "#6db06c" },
+  function: { color: "#4078f2" },
+  punctuation: { color: "#020618" },
+  operator: { color: "#020618" },
+};
 
 function CodeBlock({
   language,
@@ -23,6 +43,8 @@ function CodeBlock({
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const codeContent = String(children).replace(/\n$/, "");
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   // 一键复制代码逻辑
   const handleCopy = async () => {
@@ -34,13 +56,23 @@ function CodeBlock({
   return (
     <div className="my-3 rounded-xl overflow-hidden w-full relative group">
       {/* 代码语言标签 */}
-      <div className="absolute top-2 left-3 text-xs text-slate-400 font-mono z-10">
+      <div
+        className={cn(
+          "absolute top-2 left-3 text-xs font-mono z-10",
+          isDark ? "text-slate-400" : "text-slate-500", // 亮色模式用深一点的灰
+        )}
+      >
         {language || "text"}
       </div>
       {/* 一键复制按钮 */}
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        className={cn(
+          "absolute top-2 right-2 p-1.5 rounded-md text-white opacity-0 group-hover:opacity-100 transition-opacity z-10",
+          isDark
+            ? "bg-slate-800 hover:bg-slate-700"
+            : "bg-slate-200 hover:bg-slate-300 text-slate-700", // 亮色模式用浅灰背景+深灰文字
+        )}
         title="复制代码"
       >
         {isCopied ? (
@@ -50,10 +82,10 @@ function CodeBlock({
         )}
       </button>
       <SyntaxHighlighter
-        style={oneDark as any}
+        style={isDark ? oneDark : customDarkTheme}
         language={language || "text"}
         PreTag="div"
-        className="text-xs rounded-xl w-full pt-10 border-l-4 border-blue-500/50"
+        className={cn("text-sm rounded-xl w-full pt-10")}
         wrapLongLines={true}
       >
         {codeContent}

@@ -11,20 +11,11 @@
     margin-bottom: 0.75rem !important;
   }
 }
-
-.new-conversation-btn:hover {
-  background-color: var(--new-conversation-btn) !important;
-  color: var(--new-conversation-btn-foreground) !important;
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.1),
-    0 4px 6px -4px rgb(0 0 0 / 0.1);
-  transform: translateY(0); /* 轻微上浮 */
-  /* 或者加轻微放大：transform: scale(1.02); */
-}
-
-.new-conversation-btn {
-  background-color: var(--new-conversation-btn) !important;
-  color: var(--new-conversation-btn-foreground) !important;
+@layer components {
+  .new-conversation-btn {
+    background-color: var(--new-conversation-btn) !important;
+    color: var(--new-conversation-btn-foreground) !important;
+  }
 }
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
