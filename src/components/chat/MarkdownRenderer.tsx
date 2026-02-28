@@ -85,12 +85,7 @@ export function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
             // 行内代码：还是用原来的 <code> 标签
             return (
               <code
-                className={cn(
-                  "px-1.5 py-0.5 rounded text-xs font-mono break-all",
-                  isUser
-                    ? "!bg-blue-700/50 !text-white"
-                    : "!bg-slate-100 !dark:bg-slate-700 !text-slate-800 !dark:text-slate-100",
-                )}
+                className="px-1.5 py-0.5 rounded text-xs font-mono break-all bg-accent text-sidebar-foreground"
                 {...props}
               >
                 {children}
