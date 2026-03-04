@@ -12,7 +12,6 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const {
-    regenerateMessage,
     currentStopFn,
     isSelectionMode,
     selectedMessageIds,

@@ -24,28 +24,52 @@ export default function ChatPage() {
   const messages = activeConversation?.messages || [];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   // 核心：初始化虚拟列表，开启动态高度
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: useCallback(() => 150, []),
+    estimateSize: useCallback(() => 250, []),
     overscan: 5,
-    // 开启测量
     measureElement: useCallback(
       (element) => element.getBoundingClientRect().height,
       [],
     ),
   });
 
-  // 自动滚动到底部
+  //自动滚动逻辑：区分生成中/生成结束
   useEffect(() => {
-    if (messages.length > 0) {
-      virtualizer.scrollToIndex(messages.length - 1, {
-        align: "end",
-        behavior: "smooth",
+    if (messages.length === 0 || isUserScrolling) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const isLastMessageStreaming = lastMessage?.isStreaming;
+
+    if (isLastMessageStreaming) {
+      // 【情况1】AI正在生成：轻量滚动，不频繁measure，减少颤动
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          // 直接用原生scrollTop，不用virtualizer.scrollToIndex，减少计算压力
+          scrollContainerRef.current.scrollTop =
+            scrollContainerRef.current.scrollHeight;
+        }
+      });
+    } else {
+      // 【情况2】AI生成结束：一次性重测高度+精准滚动
+      virtualizer.measure();
+      requestAnimationFrame(() => {
+        virtualizer.scrollToIndex(messages.length - 1, {
+          align: "end",
+          behavior: "auto",
+        });
       });
     }
-  }, [messages.length, virtualizer, messages[messages.length - 1]?.content]);
+  }, [
+    messages.length,
+    virtualizer,
+    isUserScrolling,
+    // 关键：只依赖「最后一条消息的isStreaming状态」，不依赖频繁变化的content
+    messages[messages.length - 1]?.isStreaming,
+  ]);
 
   // 滚动监听逻辑
   const handleScroll = useCallback(() => {
@@ -53,22 +77,27 @@ export default function ChatPage() {
     if (!container) return;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
-    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+    // 离底部 100px 以内算“在底部”
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
 
-    setShowScrollToBottom(!isAtBottom);
+    setShowScrollToBottom(!isNearBottom);
+    // 关键：如果不在底部，说明用户在手动翻历史
+    setIsUserScrolling(!isNearBottom);
   }, []);
 
   // 回到底部按钮逻辑
   const handleScrollToBottom = () => {
     if (messages.length > 0) {
+      // 重置用户滚动状态
+      setIsUserScrolling(false);
+      setShowScrollToBottom(false);
+
       virtualizer.scrollToIndex(messages.length - 1, {
         align: "end",
-        behavior: "smooth",
+        behavior: "smooth", // 这里可以保留 smooth，因为是用户主动点击
       });
-      setShowScrollToBottom(false);
     }
   };
-
   const isStreaming =
     activeConversation?.messages.some((msg) => msg.isStreaming) ?? false;
 
@@ -154,13 +183,7 @@ export default function ChatPage() {
                 // 直接用 virtualizer.measureElement 绑定 ref
                 ref={virtualizer.measureElement}
                 data-index={virtualItem.index}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
+                className="min-h-[80px]"
               >
                 <ChatMessage message={messages[virtualItem.index]} />
               </div>

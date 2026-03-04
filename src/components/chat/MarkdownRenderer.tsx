@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"; // 假设你用 next-themes
 import type { CodeComponentProps } from "react-markdown/lib/ast-to-react";
 import { cn } from "@/lib/utils";
 // 1. 导入需要的依赖
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Copy, Check } from "lucide-react";
 
 interface MarkdownRendererProps {

@@ -79,7 +79,7 @@ export const useChatStore = create<ChatStore>()(
         }));
       },
 
-      // 新增：停止生成的方法
+      // 停止生成的方法
       stopGenerating: () => {
         const state = get();
         // 如果有停止函数，就调用它
@@ -591,7 +591,6 @@ export const useChatStore = create<ChatStore>()(
     {
       // 1. localStorage 的键名
       name: "ai-chat-conversations",
-
       storage: createJSONStorage(() => localStorage, {
         // 存的时候：把 Date 转成 ISO 字符串
         replacer: (key, value) => {
