@@ -67,7 +67,7 @@ export default function ChatPage() {
     messages.length,
     virtualizer,
     isUserScrolling,
-    // 关键：只依赖「最后一条消息的isStreaming状态」，不依赖频繁变化的content
+    messages[messages.length - 1]?.content,
     messages[messages.length - 1]?.isStreaming,
   ]);
 
