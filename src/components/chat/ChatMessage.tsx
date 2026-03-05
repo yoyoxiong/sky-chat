@@ -31,7 +31,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }, []);
 
   return (
-    <div className="w-full px-4 md:px-0 mx-auto max-w-3xl mb-6">
+    <div className="w-full px-4 md:px-0 pb-3">
       <div
         className={cn(
           "flex w-full items-start gap-3",

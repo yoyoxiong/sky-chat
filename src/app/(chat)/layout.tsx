@@ -21,9 +21,6 @@ export default function ChatLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 控制移动端侧边栏显示/隐藏
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   const {
     conversations,
     activeConversationId,
@@ -31,7 +28,8 @@ export default function ChatLayout({
     setActiveConversation,
     deleteConversation,
   } = useChatStore();
-
+  // 控制移动端侧边栏显示/隐藏
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // 删除会话相关状态
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [convIdToDelete, setConvIdToDelete] = useState<string | null>(null);
@@ -57,19 +55,20 @@ export default function ChatLayout({
   }, []);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* 移动端蒙层：打开侧边栏时显示，点击关闭 */}
       {isSidebarOpen && (
+        //inset-0是铺满整个父容器的意思，z-40是层级关系，数越大层级越高，bg-black/50是背景色半透明
         <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
-
       {/* 侧边栏：PC端固定显示，移动端抽屉式 */}
+      {/*inset-y-0是竖直方向铺满父容器*/}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-65 border-r border-border bg-sidebar flex flex-col
+          fixed inset-y-0 left-0 z-50 w-70 border-r border-border bg-sidebar flex flex-col
           transition-transform duration-300
           /* 移动端默认隐藏 */
           -translate-x-full
@@ -80,7 +79,7 @@ export default function ChatLayout({
         `}
       >
         {/* 侧边栏头部：标题、关闭按钮、主题切换、新建聊天 */}
-        <div className="p-4 border-b border-border shrink-0">
+        <div className="border-b border-border px-4 py-3">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-[#3964fe]">Sky-Chat</h2>
             <div className="flex items-center gap-2">
@@ -114,7 +113,7 @@ export default function ChatLayout({
 
           {/* 新建聊天按钮 */}
           <Button
-            className="new-conversation-btn w-full justify-center gap-2 cursor-pointer rounded-xl shadow-sm hover:shadow-lg transition-all duration-200"
+            className="text-base new-conversation-btn w-full h-12 justify-center gap-2 cursor-pointer rounded-4xl shadow-sm hover:shadow-lg transition-all duration-200 mb-4"
             onClick={() => {
               createNewConversation();
               setIsSidebarOpen(false);
@@ -132,11 +131,10 @@ export default function ChatLayout({
           onDeleteConversation={handleDeleteConversation}
         />
       </aside>
-
       {/* 聊天主内容区 */}
-      <main className="flex-1 flex flex-col bg-background overflow-hidden">
+      <main className="flex-1 flex flex-col bg-background">
         {/* 移动端顶部导航：仅手机显示，显示当前会话标题 */}
-        <div className="md:hidden border-b border-border p-3 flex items-center gap-3 shrink-0">
+        <nav className="h-14 md:hidden border-b border-border p-3 flex items-center gap-3">
           <button
             type="button"
             className="p-2 rounded hover:bg-accent"
@@ -162,10 +160,9 @@ export default function ChatLayout({
             {conversations.find((c) => c.id === activeConversationId)?.title ||
               "Sky-Chat"}
           </h2>
-        </div>
+        </nav>
         {children}
       </main>
-
       {/* 删除会话确认对话框 */}
       <AlertDialog
         open={isDeleteDialogOpen}

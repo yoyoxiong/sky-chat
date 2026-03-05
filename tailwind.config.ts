@@ -1,6 +1,6 @@
 // 导入Tailwind的类型定义，让代码有提示，不报错
 import type { Config } from "tailwindcss";
-
+import tailwindScrollbar from "tailwind-scrollbar";
 // 整个配置对象，告诉Tailwind怎么工作
 const config: Config = {
   // 🔑 核心：开启class模式的深色模式，和我们的.dark变量对应
@@ -39,7 +39,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [tailwindScrollbar],
 };
 
 export default config;

@@ -46,9 +46,9 @@ export function ConversationItem({
       onClick={() => onSelectConversation?.(conv.id)}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "cursor-pointer w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors group",
+        "cursor-pointer w-full p-3 rounded-xl flex items-center gap-3 transition-colors group",
         isActive
-          ? "bg-accent text-accent-foreground font-medium"
+          ? "bg-accent text-accent-foreground"
           : "text-foreground hover:bg-accent",
       )}
     >
@@ -65,8 +65,8 @@ export function ConversationItem({
         />
       ) : (
         <>
-          <span className="text-sm truncate flex-1">{conv.title}</span>
-          <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <span className="text-base truncate flex-1">{conv.title}</span>
+          <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
             双击修改标题
           </span>
         </>
@@ -79,7 +79,7 @@ export function ConversationItem({
             e.stopPropagation(); // 阻止冒泡触发选择会话
             onDeleteConversation?.(conv.id);
           }}
-          className="opacity-100 md:opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 transition-all flex-shrink-0"
+          className="opacity-100 md:opacity-0 group-hover:opacity-100 hover:text-red-600 transition-all"
         >
           <Trash2Icon className="w-4 h-4" />
         </button>

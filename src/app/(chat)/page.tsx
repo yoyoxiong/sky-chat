@@ -25,18 +25,27 @@ export default function ChatPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isScrollingBar, setIsScrollingBar] = useState(false);
+
   // 核心：初始化虚拟列表，开启动态高度
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: useCallback(() => 250, []),
+    estimateSize: useCallback(() => 150, []),
     overscan: 5,
     measureElement: useCallback(
       (element) => element.getBoundingClientRect().height,
       [],
     ),
   });
-
+  useEffect(() => {
+    setIsUserScrolling(false);
+    virtualizer.scrollToIndex(messages.length - 1, {
+      align: "end",
+      behavior: "smooth", // 这里可以保留 smooth，因为是用户主动点击
+    });
+    setShowScrollToBottom(false);
+  }, [messages.length]);
   //自动滚动逻辑：区分生成中/生成结束
   useEffect(() => {
     if (messages.length === 0 || isUserScrolling) return;
@@ -82,7 +91,17 @@ export default function ChatPage() {
 
     setShowScrollToBottom(!isNearBottom);
     // 关键：如果不在底部，说明用户在手动翻历史
-    setIsUserScrolling(!isNearBottom);
+    if (!isNearBottom) {
+      setIsUserScrolling(true);
+    }
+
+    setIsScrollingBar(true); // 一滚动就显示
+    const timer = setTimeout(() => {
+      setIsScrollingBar(false); // 停止滚动 150ms 后隐藏
+    }, 400);
+
+    // 清理定时器，防止内存泄漏
+    return () => clearTimeout(timer);
   }, []);
 
   // 回到底部按钮逻辑
@@ -105,7 +124,7 @@ export default function ChatPage() {
     return (
       <div className="flex flex-col h-full w-full overflow-hidden">
         {/* 欢迎语区域：占据剩余空间，垂直水平居中 */}
-        <div className="flex-1 flex flex-col items-center justify-center w-full overflow-hidden">
+        <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className="text-center space-y-4 px-4">
             <h1 className="text-3xl font-bold text-foreground">
               你好，我是 Sky-Chat
@@ -115,7 +134,7 @@ export default function ChatPage() {
         </div>
 
         {/* 输入框区域：固定在底部 */}
-        <div className="shrink-0">
+        <div>
           <ChatInput
             disabled={isStreaming}
             isGenerating={isStreaming}
@@ -128,9 +147,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
+    <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
       {isSelectionMode && (
-        <div className=" bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
+        <div className="bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <button
               onClick={clearSelection}
@@ -153,8 +172,8 @@ export default function ChatPage() {
         </div>
       )}
       {!isSelectionMode && (
-        <div className="hidden md:block bg-card px-6 py-3 shrink-0">
-          <h2 className="font-normal text-card-foreground text-center">
+        <div className="h-14 bg-card px-6 py-3">
+          <h2 className="text-lg text-card-foreground text-center">
             {activeConversation?.title}
           </h2>
         </div>
@@ -163,7 +182,7 @@ export default function ChatPage() {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overflow-x-hidden w-full relative"
+        className={`flex-1 overflow-y-auto w-full relative scrollbar-chat ${isScrollingBar ? "is-scrolling" : ""}`}
       >
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -176,6 +195,7 @@ export default function ChatPage() {
               width: "100%",
               position: "relative",
             }}
+            className="mx-auto md:max-w-[70%] max-w-[90%]"
           >
             {virtualizer.getVirtualItems().map((virtualItem) => (
               <div
@@ -190,18 +210,17 @@ export default function ChatPage() {
             ))}
           </div>
         )}
-
+      </div>
+      <div className="flex justify-center">
         {showScrollToBottom && (
           <button
             onClick={handleScrollToBottom}
-            className="fixed bottom-32 right-43 md:right-135 bg-card border border-border rounded-full p-2.5 shadow-lg hover:bg-accent hover:shadow-xl transition-all duration-200 z-10"
+            className="fixed bottom-47 bg-card border border-border rounded-full p-2.5 shadow-lg hover:bg-accent hover:shadow-xl transition-all duration-200 z-10"
             title="回到底部"
           >
             <ChevronDown className="h-5 w-5" />
           </button>
         )}
-      </div>
-      <div className="shrink-0">
         <ChatInput
           disabled={isStreaming}
           isGenerating={isStreaming}

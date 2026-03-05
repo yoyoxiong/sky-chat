@@ -50,8 +50,12 @@ export function ChatInput({
     if (!textarea) return;
     // 先重置高度，再计算滚动高度，实现自动撑开
     textarea.style.height = "auto";
-    const maxHeight = 200; // 最大高度200px，超过后出现滚动条
-    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    const maxHeight = 250;
+    const minHeight = 130;
+    const newHeight = Math.min(
+      Math.max(textarea.scrollHeight, minHeight),
+      maxHeight,
+    );
     textarea.style.height = `${newHeight}px`;
   };
 
@@ -101,14 +105,14 @@ export function ChatInput({
   };
 
   return (
-    <div className=" bg-card p-3 md:p-4">
-      <div className="mx-auto max-w-3xl w-full">
+    <div className=" bg-card w-full pb-10 md:px-0 px-3">
+      <div className="mx-auto md:max-w-[72%] max-w-[95%] w-full md:pr-6 ">
         {/* 文件列表：只有当有文件时才显示，显示在输入框上方 */}
         <InputFileList selectedFiles={selectedFiles} removeFile={removeFile} />
 
         <div
           className={cn(
-            "relative w-full rounded-2xl border border-border transition-all duration-200",
+            "relative w-full rounded-4xl border border-border transition-all duration-200",
             "bg-card",
             "focus-within:border-primary/50 focus-within:shadow-md",
             disabled && "opacity-60 cursor-not-allowed",
@@ -135,9 +139,10 @@ export function ChatInput({
             }
             disabled={disabled || isGenerating}
             rows={1}
-            className="w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm outline-none placeholder:text-muted-foreground dark:placeholder:text-muted-foreground/80 disabled:cursor-not-allowed"
+            className="appearance-none rounded-4xl w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm outline-none placeholder:text-[18px] placeholder:text-muted-foreground dark:placeholder:text-muted-foreground/80 disabled:cursor-not-allowed"
           />
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2">
+
+          <div className="z-10 absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2 bg-card rounded-b-4xl">
             {/*输入模式切换按钮 */}
             <InputMode mode={mode} setMode={setMode} />
             <div className="flex items-center gap-2">

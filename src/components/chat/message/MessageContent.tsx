@@ -45,11 +45,11 @@ export function MessageContent({
         {/* 消息气泡 */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm md:text-base leading-relaxed flex flex-col justify-center",
+            "rounded-2xl py-2.5 text-sm md:text-base leading-relaxed flex flex-col justify-center",
             "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
             isUser ? "ml-auto" : "mr-auto",
             isUser
-              ? "rounded-t-2xl rounded-l-2xl rounded-br-md bg-accent text-foreground shadow-sm"
+              ? "rounded-t-2xl rounded-l-2xl px-4 rounded-br-md bg-accent text-foreground shadow-sm"
               : "bg-transparent border-none text-foreground shadow-none prose prose-xs md:prose-sm dark:prose-invert max-w-none prose-p:my-0",
           )}
         >

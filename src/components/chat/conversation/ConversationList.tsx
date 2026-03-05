@@ -11,7 +11,7 @@ export function ConversationList({
   onDeleteConversation,
 }: ConversationListProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-4">
+    <div className="flex-1 flex flex-col overflow-y-auto p-2 gap-y-1 pb-4">
       {conversations.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center mt-4">
           暂无历史会话

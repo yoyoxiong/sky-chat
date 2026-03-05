@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AI_MODEL, MAX_TOKENS, TEMPERATURE } from "@/constants";
 
 // 流式输出api，对接 DeepSeek 大模型（兼容 OpenAI 格式）
 export async function POST(req: Request) {
@@ -23,12 +24,12 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: AI_MODEL,
         // 可选模型：deepseek-coder（代码专用）、deepseek-chat（通用对话）
         messages: messages, // 对话历史（上下文）
         stream: true, // 开启流式输出
-        temperature: 0.7, // 回答随机性（0-1，越小越严谨）
-        max_tokens: 2000, // 最大回复长度
+        temperature: TEMPERATURE, // 回答随机性（0-1，越小越严谨）
+        max_tokens: MAX_TOKENS, // 最大回复长度
         top_p: 0.95, // 采样策略
       }),
     });
