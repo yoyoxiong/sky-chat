@@ -63,9 +63,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div
           className={cn(
             "flex flex-col gap-1 w-full",
-            isSelectionMode ? "flex-1" : "w-full",
+            isSelectionMode ? "flex-1 cursor-pointer" : "w-full",
             isUser ? "order-1" : "order-2",
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMessageSelection(message.id);
+          }}
         >
           <MessageContent message={message} hasStopFunction={!!currentStopFn} />
         </div>
