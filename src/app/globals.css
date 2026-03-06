@@ -32,10 +32,6 @@
     width: 6px; /* 细滑块 */
     background: transparent;
   }
-  .scrollbar-chat::-webkit-scrollbar-track {
-    background: transparent; /* 隐藏轨道 */
-    display: none;
-  }
   .scrollbar-chat::-webkit-scrollbar-thumb {
     opacity: 0; /* 默认隐藏滑块 */
     border-radius: 9999px; /* 圆角 */

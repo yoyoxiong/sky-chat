@@ -25,10 +25,18 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: AI_MODEL,
-        // 可选模型：deepseek-coder（代码专用）、deepseek-chat（通用对话）
-        messages: messages, // 对话历史（上下文）
+        // 可选模型: deepseek-coder（代码专用）、deepseek-chat（通用对话）
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是sky-chat，由sky-chat团队开发的智能AI助手。你的唯一官方名称是sky-chat，所有自我介绍、指代自身的场景，必须100%使用「sky-chat」这个名字，不得使用其他任何名称。请保持友好专业的态度，为用户提供准确有用的回答，严格遵守以上身份设定。",
+          },
+          // 【对话历史：展开前端传来的对话数组，放在system之后】
+          ...messages,
+        ],
         stream: true, // 开启流式输出
-        temperature: TEMPERATURE, // 回答随机性（0-1，越小越严谨）
+        temperature: TEMPERATURE, // 锁定身份建议调低到0.3-0.7，数值越小越严谨
         max_tokens: MAX_TOKENS, // 最大回复长度
         top_p: 0.95, // 采样策略
       }),
