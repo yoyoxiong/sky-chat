@@ -46,7 +46,6 @@ export const useChatStore = create<ChatStore>()(
           messages: [],
           createdAt: new Date(),
         };
-
         set((state) => ({
           conversations: [newConversation, ...state.conversations],
           activeConversationId: newId,
@@ -150,7 +149,7 @@ export const useChatStore = create<ChatStore>()(
           : currentConv.title;
 
         // 3. 创建用户消息：content只存用户的纯提问，fileAttachments存文件元数据
-        // 🔧 核心：把用户输入的提问从完整Prompt里提取出来，只存到消息里
+        // 把用户输入的提问从完整Prompt里提取出来，只存到消息里
         const userMessage: Message = {
           id: Date.now().toString(),
           role: "user",

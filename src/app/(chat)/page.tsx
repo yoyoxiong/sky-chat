@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useChatStore } from "@/store/useChatStore";
@@ -18,69 +17,34 @@ export default function ChatPage() {
     clearSelection,
     deleteSelectedMessages,
   } = useChatStore();
+
   const activeConversation = conversations.find(
     (conv) => conv.id === activeConversationId,
   );
   const messages = activeConversation?.messages || [];
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isScrollingBar, setIsScrollingBar] = useState(false);
 
-  // 核心：初始化虚拟列表，开启动态高度
-  const virtualizer = useVirtualizer({
-    count: messages.length,
-    getScrollElement: () => scrollContainerRef.current,
-    estimateSize: useCallback(() => 150, []),
-    overscan: 5,
-    measureElement: useCallback(
-      (element) => element.getBoundingClientRect().height,
-      [],
-    ),
-  });
+  // --- 核心：自动滚动到底部逻辑（简化版，不再依赖虚拟列表） ---
   useEffect(() => {
-    setIsUserScrolling(false);
-    virtualizer.scrollToIndex(messages.length - 1, {
-      align: "end",
-      behavior: "smooth", // 这里可以保留 smooth，因为是用户主动点击
-    });
-    setShowScrollToBottom(false);
-  }, [messages.length]);
-  //自动滚动逻辑：区分生成中/生成结束
-  useEffect(() => {
-    if (messages.length === 0 || isUserScrolling) return;
+    // 如果用户正在手动浏览历史，不自动滚动
+    if (isUserScrolling) return;
 
-    const lastMessage = messages[messages.length - 1];
-    const isLastMessageStreaming = lastMessage?.isStreaming;
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-    if (isLastMessageStreaming) {
-      // 【情况1】AI正在生成：轻量滚动，不频繁measure，减少颤动
-      requestAnimationFrame(() => {
-        if (scrollContainerRef.current) {
-          // 直接用原生scrollTop，不用virtualizer.scrollToIndex，减少计算压力
-          scrollContainerRef.current.scrollTop =
-            scrollContainerRef.current.scrollHeight;
-        }
-      });
-    } else {
-      // 【情况2】AI生成结束：一次性重测高度+精准滚动
-      virtualizer.measure();
-      requestAnimationFrame(() => {
-        virtualizer.scrollToIndex(messages.length - 1, {
-          align: "end",
-          behavior: "auto",
-        });
-      });
-    }
+    // 直接用原生 scrollTop 滚动到底部
+    container.scrollTop = container.scrollHeight - container.clientHeight;
   }, [
-    messages.length,
-    virtualizer,
+    messages.length, // 消息数量变化时滚动
+    messages[messages.length - 1]?.content, // 流式内容更新时滚动
     isUserScrolling,
-    messages[messages.length - 1]?.content,
-    messages[messages.length - 1]?.isStreaming,
   ]);
 
-  // 滚动监听逻辑
+  // --- 滚动监听逻辑（完全保留） ---
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -90,40 +54,43 @@ export default function ChatPage() {
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
 
     setShowScrollToBottom(!isNearBottom);
+
     // 关键：如果不在底部，说明用户在手动翻历史
     if (!isNearBottom) {
       setIsUserScrolling(true);
     }
 
-    setIsScrollingBar(true); // 一滚动就显示
+    // 滚动条显示逻辑
+    setIsScrollingBar(true);
     const timer = setTimeout(() => {
-      setIsScrollingBar(false); // 停止滚动 150ms 后隐藏
+      setIsScrollingBar(false);
     }, 400);
 
-    // 清理定时器，防止内存泄漏
     return () => clearTimeout(timer);
   }, []);
 
-  // 回到底部按钮逻辑
+  // --- 回到底部按钮逻辑（完全保留） ---
   const handleScrollToBottom = () => {
-    if (messages.length > 0) {
-      // 重置用户滚动状态
-      setIsUserScrolling(false);
-      setShowScrollToBottom(false);
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-      virtualizer.scrollToIndex(messages.length - 1, {
-        align: "end",
-        behavior: "smooth", // 这里可以保留 smooth，因为是用户主动点击
-      });
-    }
+    setIsUserScrolling(false);
+    setShowScrollToBottom(false);
+
+    // 直接用原生 API 平滑滚动到底部
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    });
   };
+
   const isStreaming =
     activeConversation?.messages.some((msg) => msg.isStreaming) ?? false;
 
+  // --- 无会话时的欢迎页面（完全保留） ---
   if (!activeConversation) {
     return (
       <div className="flex flex-col h-full w-full overflow-hidden">
-        {/* 欢迎语区域：占据剩余空间，垂直水平居中 */}
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className="text-center space-y-4 px-4">
             <h1 className="text-3xl font-bold text-foreground">
@@ -132,8 +99,6 @@ export default function ChatPage() {
             <p className="text-muted-foreground">有什么我能帮您吗</p>
           </div>
         </div>
-
-        {/* 输入框区域：固定在底部 */}
         <div>
           <ChatInput
             disabled={isStreaming}
@@ -146,8 +111,10 @@ export default function ChatPage() {
     );
   }
 
+  // --- 主渲染逻辑（替换虚拟列表为普通 map） ---
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
+      {/* 批量删除模式的顶部栏（完全保留） */}
       {isSelectionMode && (
         <div className="bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
@@ -171,6 +138,8 @@ export default function ChatPage() {
           </button>
         </div>
       )}
+
+      {/* 普通模式的会话标题栏（完全保留） */}
       {!isSelectionMode && (
         <div className="h-14 bg-card px-6 py-3">
           <h2 className="text-lg text-card-foreground text-center">
@@ -179,6 +148,7 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* 核心：消息列表滚动容器（简化版） */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -189,28 +159,18 @@ export default function ChatPage() {
             开始一段对话吧
           </div>
         ) : (
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: "100%",
-              position: "relative",
-            }}
-            className="mx-auto md:max-w-[70%] max-w-[90%]"
-          >
-            {virtualizer.getVirtualItems().map((virtualItem) => (
-              <div
-                key={virtualItem.key}
-                // 直接用 virtualizer.measureElement 绑定 ref
-                ref={virtualizer.measureElement}
-                data-index={virtualItem.index}
-                className="min-h-[80px]"
-              >
-                <ChatMessage message={messages[virtualItem.index]} />
+          // 【核心修改】直接 map 渲染所有消息，去掉虚拟列表的复杂结构
+          <div className="mx-auto md:max-w-[70%] max-w-[90%] py-4">
+            {messages.map((message) => (
+              <div key={message.id}>
+                <ChatMessage message={message} />
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* 回到底部按钮和输入框（完全保留） */}
       <div className="flex justify-center">
         {showScrollToBottom && (
           <button

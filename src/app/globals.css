@@ -42,9 +42,9 @@
   /* --- 激活状态（JS 会加这个类） --- */
 
   /* Firefox 显示 */
-  .scrollbar-chat.is-scrolling {
+  /* .scrollbar-chat.is-scrolling {
     scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-  }
+  } */
   /* Chrome 等显示 */
   .scrollbar-chat.is-scrolling::-webkit-scrollbar-thumb {
     opacity: 1;

@@ -46,7 +46,7 @@ export function MessageContent({
         <div
           className={cn(
             "rounded-2xl py-2.5 text-sm md:text-base leading-relaxed flex flex-col justify-center",
-            "min-w-fit max-w-[80%] md:max-w-[70%] shrink-0",
+            "max-w-[80%] md:max-w-[70%]",
             isUser ? "ml-auto" : "mr-auto",
             isUser
               ? "rounded-t-2xl rounded-l-2xl px-4 rounded-br-md bg-accent text-foreground shadow-sm"
