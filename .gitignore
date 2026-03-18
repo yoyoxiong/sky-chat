@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ---------------- 通用 ----------------
+node_modules/
+.env
+.DS_Store
+*.log
+
+# ---------------- 前端 (Next.js) ----------------
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# ---------------- 后端 (Express + Prisma) ----------------
+backend/dist/
+backend/prisma/dev.db
+backend/prisma/dev.db-journal

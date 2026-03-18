@@ -211,7 +211,6 @@ export const useChatStore = create<ChatStore>()(
             }
           })();
         }
-
         // 6. 原来的流式请求逻辑完全不动，用完整的content（带文件内容）调用AI
         await fetchStream(
           "/api/stream",
@@ -351,7 +350,7 @@ export const useChatStore = create<ChatStore>()(
 
         try {
           // 6. 调用我们自己写的后端文生图接口
-          const res = await fetch("/api/generate-image", {
+          const res = await fetch("http://localhost:3001/api/generate-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt }),
