@@ -15,6 +15,7 @@ import { CircleFadingPlus } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ConversationList } from "@/components/chat/conversation/ConversationList";
+import { UserNav } from "@/components/UserNav";
 
 export default function ChatLayout({
   children,
@@ -130,6 +131,7 @@ export default function ChatLayout({
           onSelectConversation={handleSelectConversation}
           onDeleteConversation={handleDeleteConversation}
         />
+        <UserNav />
       </aside>
       {/* 聊天主内容区 */}
       <main className="flex-1 flex flex-col bg-background">

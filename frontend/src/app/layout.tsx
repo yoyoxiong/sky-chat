@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { AuthGuard } from "@/components/providers/AuthGuard";
 
 // 配置中文字体子集（"latin" 是英文，加上 "latin-ext" 支持更多符号，中文也能正常显示）
 const geistSans = Geist({
@@ -36,7 +37,9 @@ export default function RootLayout({
         // 保留字体变量和 antialiased（字体抗锯齿，让字更好看）
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthGuard>{children}</AuthGuard>
+        </ThemeProvider>
       </body>
     </html>
   );

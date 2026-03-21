@@ -3,12 +3,16 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
 import { fetchStream } from "@/lib/stream";
 import { generateChatTitle } from "@/app/api/chat";
+import { fetchWithAuth } from "@/lib/api";
 
 interface ChatStore {
   conversations: Conversation[];
   activeConversationId: string | null;
   currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
   isLatestMessage: boolean;
+  hasHydrated: boolean; // 🔑 新增
+  setHasHydrated: (state: boolean) => void; // 🔑 新增
+  fetchConversations: () => Promise<void>; //新增
   regenerateMessage: (messageId: string) => Promise<void>; // 重新生成
   createNewConversation: () => void;
   setActiveConversation: (id: string) => void;
@@ -37,8 +41,25 @@ export const useChatStore = create<ChatStore>()(
       isSelectionMode: false,
       selectedMessageIds: [],
       isLatestMessage: false,
-
+      hasHydrated: false,
+      setHasHydrated: (state) => set({ hasHydrated: state }),
+      // 🔑 获取我的对话列表
+      fetchConversations: async () => {
+        try {
+          // 用我们封装好的 fetchWithAuth，自动带 Token
+          const res = await fetchWithAuth("/api/conversations");
+          const data = await res.json();
+          set({ conversations: data.conversations });
+        } catch (err) {
+          console.error("获取对话失败", err);
+        }
+      },
       createNewConversation: () => {
+        const state = get();
+        if (!state.hasHydrated) {
+          console.log("⏳ 还在加载中，禁止创建新对话");
+          return;
+        }
         const newId = Date.now().toString();
         const newConversation: Conversation = {
           id: newId,
@@ -56,14 +77,38 @@ export const useChatStore = create<ChatStore>()(
         set({ activeConversationId: id });
       },
 
-      deleteConversation: (id: string) => {
-        set((state) => ({
-          conversations: state.conversations.filter((conv) => conv.id !== id),
+      // src/store/useChatStore.ts
+      deleteConversation: async (conversationId: string) => {
+        const state = get();
+
+        // 把前端字符串ID转成数字，匹配数据库的ID类型
+        const numericId = parseInt(conversationId);
+        if (!isNaN(numericId)) {
+          try {
+            // 先调后端接口删数据库里的内容
+            const res = await fetchWithAuth(`/api/conversations/${numericId}`, {
+              method: "DELETE",
+            });
+            if (!res.ok) throw new Error("删除失败");
+          } catch (err) {
+            console.error("删除会话失败", err);
+            return; // 后端删除失败，不修改前端Store
+          }
+        }
+
+        // 后端删除成功后，再更新前端Store
+        const newConversations = state.conversations.filter(
+          (c) => c.id !== conversationId,
+        );
+
+        set({
+          conversations: newConversations,
+          // 如果删的是当前激活的会话，清空激活ID
           activeConversationId:
-            state.activeConversationId === id
+            state.activeConversationId === conversationId
               ? null
               : state.activeConversationId,
-        }));
+        });
       },
 
       renameConversation: (id: string, newTitle: string) => {
@@ -108,6 +153,9 @@ export const useChatStore = create<ChatStore>()(
       },
       getOrCreateActiveConversation: () => {
         const state = get();
+        if (!state.hasHydrated) {
+          return; // 或者 undefined，让 UI 显示 Loading
+        }
         // 有激活会话则直接返回
         if (state.activeConversationId) {
           return state.conversations.find(
@@ -226,6 +274,7 @@ export const useChatStore = create<ChatStore>()(
                 role: "user",
                 content: content, // 给AI发完整的带文件内容的Prompt
               }),
+            conversationId: currentConv.id,
           },
           // 每收到一段数据，就追加到AI消息里
           (chunk) => {
@@ -617,6 +666,19 @@ export const useChatStore = create<ChatStore>()(
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // 先把时间字符串转成 Date 对象 (如果需要的话)
+          state.conversations.forEach((conv) => {
+            conv.messages.forEach((msg) => {
+              if (typeof msg.timestamp === "string")
+                msg.timestamp = new Date(msg.timestamp);
+            });
+          });
+          // 标记水合完成
+          state.setHasHydrated(true);
+        }
+      },
     },
   ),
 );

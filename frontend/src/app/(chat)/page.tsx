@@ -5,6 +5,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { useChatStore } from "@/store/useChatStore";
 import { ChevronDown } from "lucide-react";
 import { Trash2, X } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function ChatPage() {
   const {
@@ -16,7 +17,11 @@ export default function ChatPage() {
     selectedMessageIds,
     clearSelection,
     deleteSelectedMessages,
+    fetchConversations,
   } = useChatStore();
+
+  // ==================== 改动1：新增authHydrated水合标记 ====================
+  const { isAuthenticated, hasHydrated: authHydrated } = useAuthStore();
 
   const activeConversation = conversations.find(
     (conv) => conv.id === activeConversationId,
@@ -28,39 +33,45 @@ export default function ChatPage() {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isScrollingBar, setIsScrollingBar] = useState(false);
 
-  // --- 核心：自动滚动到底部逻辑（简化版，不再依赖虚拟列表） ---
+  // ==================== 改动2：修复后的初始化逻辑，加水合锁 ====================
   useEffect(() => {
-    // 如果用户正在手动浏览历史，不自动滚动
+    // 关键锁：Auth还没加载完成，绝对不执行拉取，彻底解决竞态
+    if (!authHydrated) return;
+
+    if (isAuthenticated) {
+      console.log("🔄 从后端同步对话列表");
+      fetchConversations();
+    }
+  }, [isAuthenticated, authHydrated, fetchConversations]);
+
+  // --- 自动滚动到底部逻辑 ---
+  useEffect(() => {
     if (isUserScrolling) return;
 
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // 直接用原生 scrollTop 滚动到底部
     container.scrollTop = container.scrollHeight - container.clientHeight;
   }, [
-    messages.length, // 消息数量变化时滚动
-    messages[messages.length - 1]?.content, // 流式内容更新时滚动
+    messages.length,
+    messages[messages.length - 1]?.content,
     isUserScrolling,
   ]);
 
-  // --- 滚动监听逻辑（完全保留） ---
+  // --- 滚动监听逻辑 ---
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
-    // 离底部 100px 以内算“在底部”
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
 
     setShowScrollToBottom(!isNearBottom);
 
-    // 关键：如果不在底部，说明用户在手动翻历史
     if (!isNearBottom) {
       setIsUserScrolling(true);
     }
 
-    // 滚动条显示逻辑
     setIsScrollingBar(true);
     const timer = setTimeout(() => {
       setIsScrollingBar(false);
@@ -69,7 +80,7 @@ export default function ChatPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // --- 回到底部按钮逻辑（完全保留） ---
+  // --- 回到底部按钮逻辑 ---
   const handleScrollToBottom = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -77,7 +88,6 @@ export default function ChatPage() {
     setIsUserScrolling(false);
     setShowScrollToBottom(false);
 
-    // 直接用原生 API 平滑滚动到底部
     container.scrollTo({
       top: container.scrollHeight,
       behavior: "smooth",
@@ -87,7 +97,7 @@ export default function ChatPage() {
   const isStreaming =
     activeConversation?.messages.some((msg) => msg.isStreaming) ?? false;
 
-  // --- 无会话时的欢迎页面（完全保留） ---
+  // --- 无会话时的欢迎页面 ---
   if (!activeConversation) {
     return (
       <div className="flex flex-col h-full w-full overflow-hidden">
@@ -111,10 +121,10 @@ export default function ChatPage() {
     );
   }
 
-  // --- 主渲染逻辑（替换虚拟列表为普通 map） ---
+  // --- 主渲染逻辑 ---
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
-      {/* 批量删除模式的顶部栏（完全保留） */}
+      {/* 批量删除模式的顶部栏 */}
       {isSelectionMode && (
         <div className="bg-card px-6 py-3 shrink-0 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
@@ -139,7 +149,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* 普通模式的会话标题栏（完全保留） */}
+      {/* 普通模式的会话标题栏 */}
       {!isSelectionMode && (
         <div className="h-14 bg-card px-6 py-3">
           <h2 className="text-lg text-card-foreground text-center">
@@ -148,7 +158,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* 核心：消息列表滚动容器（简化版） */}
+      {/* 消息列表滚动容器 */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -159,7 +169,6 @@ export default function ChatPage() {
             开始一段对话吧
           </div>
         ) : (
-          // 【核心修改】直接 map 渲染所有消息，去掉虚拟列表的复杂结构
           <div className="mx-auto md:max-w-[70%] max-w-[90%] py-4">
             {messages.map((message) => (
               <div key={message.id}>
@@ -170,7 +179,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* 回到底部按钮和输入框（完全保留） */}
+      {/* 回到底部按钮和输入框 */}
       <div className="flex justify-center">
         {showScrollToBottom && (
           <button

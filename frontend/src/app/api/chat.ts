@@ -4,6 +4,7 @@
  * @param userMessage 用户的第一条提问
  * @returns 生成的标题
  */
+import { fetchWithAuth } from "@/lib/api"; // 导入
 export const generateChatTitle = async (userMessage: string) => {
   const res = await fetch("http://localhost:3001/api/generate-title", {
     method: "POST",
@@ -23,7 +24,7 @@ export const fetchChatStream = async (
   body: Record<string, any>,
   options?: { signal?: AbortSignal },
 ) => {
-  return fetch("http://localhost:3001/api/stream", {
+  return fetchWithAuth("/api/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

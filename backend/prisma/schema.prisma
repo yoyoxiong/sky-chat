@@ -9,12 +9,22 @@ datasource db {
 
 model User {
   id        Int       @id @default(autoincrement())
-  githubId  String    @unique
-  username  String
-  avatarUrl String
+  
+  // 登录凭证：邮箱和用户名都设为唯一，防止重复注册
+  username  String    @unique
+  email     String    @unique // 🔥 面试重点：为什么要加 @unique？答：保证数据库层面的唯一性，防止并发导致重复注册
+  
+  // 密码字段：注意是 String 类型，存的是哈希值
+  password  String    // 🔥 面试重点：这里为什么不直接存密码？答：如果数据库泄露，用户密码就全暴露了，必须加密
+  
+  // 原来的 OAuth 字段，设为可选（String?），这样不影响老数据，也可以删掉
+  githubId  String?   @unique
+  avatarUrl String?
+  
   createdAt DateTime  @default(now())
   conversations Conversation[]
 }
+
 
 model Conversation {
   id        Int       @id @default(autoincrement())

@@ -7,6 +7,8 @@ import prisma from "./lib/prisma"; // 导入我们的 prisma 实例
 import generateTitleRoute from "./routes/generate-title";
 import streamRoute from "./routes/stream";
 import generateImageRoute from "./routes/generate-image";
+import authRoute from "./routes/auth";
+import conversationsRoute from "./routes/conversations";
 
 // 加载环境变量
 dotenv.config();
@@ -22,6 +24,8 @@ app.use(express.json()); // 解析 JSON 请求体
 app.use("/api/generate-title", generateTitleRoute);
 app.use("/api/stream", streamRoute);
 app.use("/api/generate-image", generateImageRoute);
+app.use("/api/auth", authRoute);
+app.use("/api/conversations", conversationsRoute);
 
 // 启动服务器前先连接数据库
 async function main() {

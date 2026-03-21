@@ -9,7 +9,7 @@
 import { fetchChatStream } from "@/app/api/chat";
 export async function fetchStream(
   url: string,
-  body: Record<string, any>,
+  body: any,
   onChunk: (chunk: string) => void,
   onComplete?: () => void,
   onStop?: (stopFn: () => void) => void,
