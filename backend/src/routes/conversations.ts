@@ -28,24 +28,6 @@ router.get("/", authMiddleware, async (req, res) => {
 // 🔑 创建新对话
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user!.userId; // 🔑 只信这里的
-    const { title } = req.body; // 前端只需要传标题就行
-
-    const newConversation = await prisma.conversation.create({
-      data: {
-        title,
-        userId: userId, // 🔑 自动绑定当前用户
-      },
-    });
-
-    res.status(201).json({ conversation: newConversation });
-  } catch (error) {
-    console.error("创建对话失败:", error);
-    res.status(500).json({ error: "服务器内部错误" });
-  }
-});
-router.post("/", authMiddleware, async (req, res) => {
-  try {
     const userId = req.user!.userId;
     const { content, conversationId } = req.body;
 

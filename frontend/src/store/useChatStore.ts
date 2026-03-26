@@ -20,7 +20,6 @@ interface ChatStore {
   sendMessage: (content: string, fileAttachments: FileMeta[]) => Promise<void>; // 改成异步函数
   stopGenerating: () => void; // 停止生成的方法
   renameConversation: (id: string, newTitle: string) => void; // 重命名方法
-  generateImage: (prompt: string) => Promise<void>;
 
   isSelectionMode: boolean;
   selectedMessageIds: string[];
@@ -259,24 +258,16 @@ export const useChatStore = create<ChatStore>()(
             }
           })();
         }
-        // 6. 原来的流式请求逻辑完全不动，用完整的content（带文件内容）调用AI
+        // 6. 调用 fetchStream
         await fetchStream(
           "/api/stream",
           {
             messages: currentConv.messages
-              //得到一个只包含{role,content}的消息数组
-              .map((m) => ({
-                role: m.role,
-                content: m.content,
-              }))
-              //在消息数组末尾增加一条刚发送的用户信息
-              .concat({
-                role: "user",
-                content: content, // 给AI发完整的带文件内容的Prompt
-              }),
+              .map((m) => ({ role: m.role, content: m.content }))
+              .concat({ role: "user", content: content }),
             conversationId: currentConv.id,
           },
-          // 每收到一段数据，就追加到AI消息里
+          // 回调1：收到文字，正常追加（保持流式体验）
           (chunk) => {
             set((state) => ({
               conversations: state.conversations.map((conv) => {
@@ -295,8 +286,8 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 流结束时，标记生成完成,清空停止函数
-          () => {
+          // 回调2：流完全结束，一次性设置 isStreaming 和 imageUrl
+          (imageUrl) => {
             set((state) => ({
               currentStopFn: null,
               conversations: state.conversations.map((conv) => {
@@ -308,6 +299,7 @@ export const useChatStore = create<ChatStore>()(
                         return {
                           ...msg,
                           isStreaming: false,
+                          imageUrl: imageUrl, // 🔥 在这里设置图片链接
                         };
                       }
                       return msg;
@@ -318,173 +310,11 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 把停止函数保存到Store里
+          // 回调3：停止函数
           (stopFn) => {
             set({ currentStopFn: stopFn });
           },
         );
-      },
-      // 文生图核心方法
-      generateImage: async (prompt: string) => {
-        const state = get();
-        // 边界判断：没有会话时先创建
-        const currentConv = state.getOrCreateActiveConversation();
-        if (!currentConv) return;
-
-        // 2. 第一条消息自动生成标题，和聊天逻辑一致
-        const isFirstMessage = currentConv.messages.length === 0;
-        const tempTitle = isFirstMessage
-          ? prompt.length > 20
-            ? prompt.substring(0, 20) + "..."
-            : prompt
-          : currentConv.title;
-
-        // 3. 创建用户的提示词消息
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          role: "user",
-          content: prompt,
-          timestamp: new Date(),
-        };
-
-        // 4. 创建AI的图片占位消息，标记正在生成
-        const aiImageMessageId = (Date.now() + 1).toString();
-        const aiImageMessage: Message = {
-          id: aiImageMessageId,
-          role: "assistant",
-          content: "",
-          timestamp: new Date(),
-          isGeneratingImage: true, // 标记正在生成图片
-          generateImageError: undefined, // 显式清空
-          imageUrl: undefined, // 显式清空
-        };
-
-        // 5. 先把两条消息更新到store，UI立刻显示，给用户即时反馈
-        set((state) => ({
-          conversations: state.conversations.map((conv) => {
-            if (conv.id === state.activeConversationId) {
-              return {
-                ...conv,
-                title: tempTitle,
-                messages: [...conv.messages, userMessage, aiImageMessage],
-              };
-            }
-            return conv;
-          }),
-        }));
-        if (isFirstMessage) {
-          (async () => {
-            try {
-              // 调用你写好的生成标题API，只用用户的纯提问生成
-              const res = await generateChatTitle(prompt);
-              const { title } = await res.json();
-              // 如果AI生成了有效标题，就更新会话标题
-              if (title) {
-                set((state) => ({
-                  conversations: state.conversations.map((conv) => {
-                    if (conv.id === state.activeConversationId) {
-                      return { ...conv, title };
-                    }
-                    return conv;
-                  }),
-                }));
-              }
-              // 生成失败的话，就保留之前的临时截取标题，兜底逻辑生效
-            } catch (err) {
-              console.error("自动生成标题失败", err);
-              // 出错不影响主功能，自动走兜底的临时标题
-            }
-          })();
-        }
-
-        try {
-          // 6. 调用我们自己写的后端文生图接口
-          const res = await fetch("http://localhost:3001/api/generate-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt }),
-          });
-
-          const result = await res.json();
-
-          // 7. 生成失败，更新错误状态
-          if (!res.ok || !result.imageUrl) {
-            set((state) => ({
-              conversations: state.conversations.map((conv) => {
-                if (conv.id === state.activeConversationId) {
-                  return {
-                    ...conv,
-                    messages: conv.messages.map((msg) => {
-                      if (msg.id === aiImageMessageId) {
-                        return {
-                          ...msg,
-                          isGeneratingImage: false,
-                          generateImageError:
-                            result.error || "图片生成失败，请重试",
-                          content:
-                            "抱歉，图片生成失败了，你可以换个提示词重试~",
-                        };
-                      }
-                      return msg;
-                    }),
-                  };
-                }
-                return conv;
-              }),
-            }));
-            return;
-          }
-
-          // 8. 生成成功，更新图片地址到消息里
-          set((state) => ({
-            conversations: state.conversations.map((conv) => {
-              if (conv.id === state.activeConversationId) {
-                return {
-                  ...conv,
-                  messages: conv.messages.map((msg) => {
-                    if (msg.id === aiImageMessageId) {
-                      return {
-                        ...msg,
-                        isGeneratingImage: false,
-                        generateImageError: undefined, // 清空错误
-                        imageUrl: result.imageUrl,
-                        content: "图片生成完成，你可以点击图片查看大图~",
-                      };
-                    }
-                    return msg;
-                  }),
-                };
-              }
-              return conv;
-            }),
-          }));
-        } catch (error: unknown) {
-          // 先判断 error 是不是 Error 类型
-          const errorMessage =
-            error instanceof Error ? error.message : "网络错误，请重试";
-          // 9. 网络错误兜底
-          set((state) => ({
-            conversations: state.conversations.map((conv) => {
-              if (conv.id === state.activeConversationId) {
-                return {
-                  ...conv,
-                  messages: conv.messages.map((msg) => {
-                    if (msg.id === aiImageMessageId) {
-                      return {
-                        ...msg,
-                        isGeneratingImage: false,
-                        generateImageError: errorMessage,
-                        content: "抱歉，网络出问题了，图片生成失败了~",
-                      };
-                    }
-                    return msg;
-                  }),
-                };
-              }
-              return conv;
-            }),
-          }));
-        }
       },
       // 重新生成AI回复
       regenerateMessage: async (messageId: string) => {

@@ -29,7 +29,7 @@ export function UserNav() {
   };
 
   return (
-    <div className="p-4 border-t">
+    <div className="p-4 border-t border-border">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           {/* 点击区域：头像 + 用户名 */}

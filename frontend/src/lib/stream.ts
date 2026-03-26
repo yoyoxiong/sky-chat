@@ -11,29 +11,25 @@ export async function fetchStream(
   url: string,
   body: any,
   onChunk: (chunk: string) => void,
-  onComplete?: () => void,
+  onComplete?: (imageUrl?: string) => void,
   onStop?: (stopFn: () => void) => void,
+  onReceiveImage?: (imageUrl: string) => void,
 ) {
-  // 1. 创建AbortController
   const controller = new AbortController();
   const signal = controller.signal;
 
   let isStopped = false;
-  // 调用abort取消请求
   const stopStream = () => {
     isStopped = true;
-    controller.abort(); // 取消fetch请求
-    console.log("用户主动停止了流式生成，网络请求已取消");
+    controller.abort();
   };
 
-  // 2. 把停止函数传给外部
   if (onStop) {
     onStop(stopStream);
   }
 
   try {
     const response = await fetchChatStream(body, { signal });
-
     if (!response.ok || !response.body) {
       throw new Error("请求失败");
     }
@@ -41,34 +37,69 @@ export async function fetchStream(
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
-    // 3. 循环读取流，但增加「是否已停止」的判断
+    let buffer = "";
+    let finalImageUrl: string | undefined = undefined;
+    let foundSeparator = false;
+
     while (true) {
-      //如果用户点击了停止，直接退出循环，终止读取
       if (isStopped) {
-        // 主动取消阅读器，释放资源
         await reader.cancel();
         break;
       }
 
       const { done, value } = await reader.read();
+      if (done) break;
 
-      if (done) {
-        onComplete?.();
-        break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // 核心逻辑：只有在没找到分隔符时才处理
+      if (!foundSeparator) {
+        const sepIndex = buffer.indexOf("\n[SKY_CHAT_SEP]\n");
+
+        if (sepIndex !== -1) {
+          // 1. 找到了分隔符
+          // 把分隔符前面的所有文字一次性推出去
+          const textContent = buffer.slice(0, sepIndex);
+          if (textContent) {
+            onChunk(textContent);
+          }
+
+          // 2. 解析分隔符后面的 JSON 图片数据
+          const jsonPart = buffer.slice(sepIndex + "\n[SKY_CHAT_SEP]\n".length);
+          if (jsonPart.trim()) {
+            try {
+              const data = JSON.parse(jsonPart);
+              if (data.type === "image" && data.url) {
+                finalImageUrl = data.url;
+              }
+            } catch (e) {
+              console.error("解析图片数据失败:", e);
+            }
+          }
+
+          // 3. 标记已找到分隔符，清空 buffer
+          foundSeparator = true;
+          buffer = "";
+        } else {
+          // 2. 还没找到分隔符
+          // 注意：这里我们不推 chunk，而是继续累积 buffer
+          // 防止后面找到分隔符时重复推送
+        }
       }
+    }
 
-      const chunk = decoder.decode(value, { stream: true });
-      onChunk(chunk);
+    // 循环结束后的扫尾工作
+    if (!foundSeparator && buffer) {
+      // 如果直到结束都没找到分隔符，说明没有图片
+      // 把剩下的 buffer 作为文字推出去
+      onChunk(buffer);
     }
+
+    // 流结束，统一回调，把图片链接带出去
+    onComplete?.(finalImageUrl);
   } catch (error) {
-    // 捕获abort错误，避免控制台报错
-    if (error instanceof Error && error.name === "AbortError") {
-      console.log("请求已被用户取消");
-    } else {
-      console.error("流式请求出错：", error);
+    if (error instanceof Error && error.name !== "AbortError") {
+      console.error("流式请求出错:", error);
     }
-  } finally {
-    // 不管是正常结束还是主动停止，都执行完成回调
-    onComplete?.();
   }
 }

@@ -34,7 +34,6 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
 
-  const { generateImage } = useChatStore();
   const [mode, setMode] = useState<"chat" | "draw">("chat");
   const {
     selectedFiles,
@@ -68,12 +67,6 @@ export function ChatInput({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-  const handleGenerateImage = () => {
-    if (!input.trim()) return;
-    generateImage(input);
-    setInput("");
-    clearFiles();
-  };
   // 发送消息核心逻辑
   const handleSend = () => {
     if ((!input.trim() && selectedFiles.length === 0) || isGenerating) return;
@@ -86,11 +79,7 @@ export function ChatInput({
     }
 
     // 调用发送方法
-    if (mode === "draw") {
-      handleGenerateImage();
-    } else {
-      onSendMessage?.(finalContent, getFileMeta());
-    }
+    onSendMessage?.(finalContent, getFileMeta());
     // 清空状态
     setInput("");
     clearFiles();
