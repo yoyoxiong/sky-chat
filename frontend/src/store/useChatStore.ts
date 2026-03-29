@@ -1,3 +1,4 @@
+// src/store/useChatStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Conversation, Message, FileMeta } from "./types";
@@ -7,27 +8,26 @@ import { fetchWithAuth } from "@/lib/api";
 
 interface ChatStore {
   conversations: Conversation[];
-  activeConversationId: string | null;
-  currentStopFn: (() => void) | null; // 新增：保存当前的停止函数
+  activeConversationId: number | null;
+  currentStopFn: (() => void) | null;
   isLatestMessage: boolean;
-  hasHydrated: boolean; // 🔑 新增
-  setHasHydrated: (state: boolean) => void; // 🔑 新增
-  fetchConversations: () => Promise<void>; //新增
-  regenerateMessage: (messageId: string) => Promise<void>; // 重新生成
-  createNewConversation: () => void;
-  setActiveConversation: (id: string) => void;
-  deleteConversation: (id: string) => void;
-  sendMessage: (content: string, fileAttachments: FileMeta[]) => Promise<void>; // 改成异步函数
-  stopGenerating: () => void; // 停止生成的方法
-  renameConversation: (id: string, newTitle: string) => void; // 重命名方法
-
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+  fetchConversations: () => Promise<void>;
+  regenerateMessage: (messageId: string) => Promise<void>;
+  createNewConversation: () => Promise<void>;
+  setActiveConversation: (id: number | string) => void; // 🔧 兼容两种类型
+  deleteConversation: (id: number) => Promise<void>;
+  sendMessage: (content: string, fileAttachments: FileMeta[]) => Promise<void>;
+  stopGenerating: () => void;
+  renameConversation: (id: number | string, newTitle: string) => Promise<void>; // 🔧 改为异步，同步后端
   isSelectionMode: boolean;
   selectedMessageIds: string[];
   toggleSelectionMode: () => void;
   toggleMessageSelection: (messageId: string) => void;
   clearSelection: () => void;
-  deleteSelectedMessages: () => Promise<void>; // 批量删除
-  getOrCreateActiveConversation: () => Conversation | undefined; // 新增：获取或创建激活会话
+  deleteSelectedMessages: () => Promise<void>;
+  getOrCreateActiveConversation: () => Conversation | undefined;
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -42,67 +42,82 @@ export const useChatStore = create<ChatStore>()(
       isLatestMessage: false,
       hasHydrated: false,
       setHasHydrated: (state) => set({ hasHydrated: state }),
-      // 🔑 获取我的对话列表
+
+      // 🔑 获取我的对话列表（保持你原有逻辑，适配后端返回格式）
       fetchConversations: async () => {
         try {
-          // 用我们封装好的 fetchWithAuth，自动带 Token
           const res = await fetchWithAuth("/api/conversations");
           const data = await res.json();
-          set({ conversations: data.conversations });
+          // 🔧 补充：后端返回的是 ISO 字符串，前端转成 Date 对象
+          const formattedConversations = data.conversations.map(
+            (conv: any) => ({
+              ...conv,
+              createdAt: new Date(conv.createdAt),
+              messages:
+                conv.messages?.map((msg: any) => ({
+                  ...msg,
+                  timestamp: new Date(msg.createdAt), // 🔧 注意：后端字段是 createdAt，前端映射为 timestamp
+                  createdAt: undefined, // 清理一下
+                })) || [],
+            }),
+          );
+          set({ conversations: formattedConversations });
         } catch (err) {
           console.error("获取对话失败", err);
         }
       },
-      createNewConversation: () => {
+
+      createNewConversation: async () => {
         const state = get();
         if (!state.hasHydrated) {
           console.log("⏳ 还在加载中，禁止创建新对话");
           return;
         }
-        const newId = Date.now().toString();
-        const newConversation: Conversation = {
-          id: newId,
-          title: "新的对话",
-          messages: [],
-          createdAt: new Date(),
-        };
-        set((state) => ({
-          conversations: [newConversation, ...state.conversations],
-          activeConversationId: newId,
-        }));
-      },
-
-      setActiveConversation: (id: string) => {
-        set({ activeConversationId: id });
-      },
-
-      // src/store/useChatStore.ts
-      deleteConversation: async (conversationId: string) => {
-        const state = get();
-
-        // 把前端字符串ID转成数字，匹配数据库的ID类型
-        const numericId = parseInt(conversationId);
-        if (!isNaN(numericId)) {
-          try {
-            // 先调后端接口删数据库里的内容
-            const res = await fetchWithAuth(`/api/conversations/${numericId}`, {
-              method: "DELETE",
-            });
-            if (!res.ok) throw new Error("删除失败");
-          } catch (err) {
-            console.error("删除会话失败", err);
-            return; // 后端删除失败，不修改前端Store
-          }
+        try {
+          const res = await fetchWithAuth(`/api/conversations`, {
+            method: "POST",
+            body: JSON.stringify({ title: "新的对话" }),
+          });
+          if (!res.ok) throw new Error("创建失败");
+          const newConversation = await res.json();
+          // 🔧 补充：初始化 messages 为空数组
+          set((state) => ({
+            conversations: [
+              { ...newConversation, messages: [] },
+              ...state.conversations,
+            ],
+            activeConversationId: newConversation.id,
+          }));
+        } catch (err) {
+          console.error("创建会话失败", err);
+          return;
         }
+      },
 
-        // 后端删除成功后，再更新前端Store
+      // 🔧 兼容 string 和 number 类型的 id
+      setActiveConversation: (id: number | string) => {
+        set({
+          activeConversationId: typeof id === "string" ? parseInt(id) : id,
+        });
+      },
+
+      deleteConversation: async (conversationId: number) => {
+        const state = get();
+        try {
+          const res = await fetchWithAuth(
+            `/api/conversations/${conversationId}`,
+            { method: "DELETE" },
+          );
+          if (!res.ok) throw new Error("删除失败");
+        } catch (err) {
+          console.error("删除会话失败", err);
+          return;
+        }
         const newConversations = state.conversations.filter(
           (c) => c.id !== conversationId,
         );
-
         set({
           conversations: newConversations,
-          // 如果删的是当前激活的会话，清空激活ID
           activeConversationId:
             state.activeConversationId === conversationId
               ? null
@@ -110,29 +125,37 @@ export const useChatStore = create<ChatStore>()(
         });
       },
 
-      renameConversation: (id: string, newTitle: string) => {
-        set((state) => ({
-          conversations: state.conversations.map((conv) => {
-            // 只修改匹配id的会话标题
-            if (conv.id === id) {
-              return { ...conv, title: newTitle.trim() }; // trim() 去掉首尾空格
-            }
-            return conv;
-          }),
-        }));
+      // 🔧 改为异步，同步到后端
+      renameConversation: async (id: number | string, newTitle: string) => {
+        const numericId = typeof id === "string" ? parseInt(id) : id;
+        try {
+          // 先更新本地，保证 UI 流畅
+          set((state) => ({
+            conversations: state.conversations.map((conv) => {
+              if (conv.id === numericId) {
+                return { ...conv, title: newTitle.trim() };
+              }
+              return conv;
+            }),
+          }));
+          // 再同步到后端
+          const res = await fetchWithAuth(`/api/conversations/${numericId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: newTitle.trim() }),
+          });
+          if (!res.ok) throw new Error("重命名失败");
+        } catch (err) {
+          console.error("重命名会话失败", err);
+        }
       },
 
-      // 停止生成的方法
       stopGenerating: () => {
         const state = get();
-        // 如果有停止函数，就调用它
         if (state.currentStopFn) {
           state.currentStopFn();
-          // 调用后清空停止函数，避免重复调用
           set({ currentStopFn: null });
         }
-
-        // 同时更新Store，把所有正在生成的消息标记为完成
         set((state) => ({
           conversations: state.conversations.map((conv) => {
             if (conv.id === state.activeConversationId) {
@@ -150,18 +173,15 @@ export const useChatStore = create<ChatStore>()(
           }),
         }));
       },
+
       getOrCreateActiveConversation: () => {
         const state = get();
-        if (!state.hasHydrated) {
-          return; // 或者 undefined，让 UI 显示 Loading
-        }
-        // 有激活会话则直接返回
+        if (!state.hasHydrated) return;
         if (state.activeConversationId) {
           return state.conversations.find(
             (c) => c.id === state.activeConversationId,
           );
         }
-        // 没有则创建新会话
         state.createNewConversation();
         const newState = get();
         return newState.conversations.find(
@@ -169,44 +189,32 @@ export const useChatStore = create<ChatStore>()(
         );
       },
 
-      // 发送消息 + 流式获取AI回复
       sendMessage: async (
         content: string,
         fileAttachments: FileMeta[] = [],
       ) => {
         const state = get();
-        // 发送新消息前，先停止上一次的生成
-        if (state.currentStopFn) {
-          state.stopGenerating();
-        }
-        // 边界判断：没有会话时先创建
+        if (state.currentStopFn) state.stopGenerating();
         const currentConv = state.getOrCreateActiveConversation();
         if (!currentConv) return;
 
-        // 从完整Prompt里提取用户的纯提问，只用这个生成标题
         const userPureInput = content.split("\n\n用户的问题：")[1] || content;
-        // 判断是不是第一句话（触发自动生成标题的条件）
         const isFirstMessage = currentConv.messages.length === 0;
-
-        // 先给临时标题，保证UI立刻有反馈，兜底逻辑保留
         const tempTitle = isFirstMessage
           ? userPureInput.length > 20
             ? userPureInput.substring(0, 20) + "..."
             : userPureInput
           : currentConv.title;
 
-        // 3. 创建用户消息：content只存用户的纯提问，fileAttachments存文件元数据
-        // 把用户输入的提问从完整Prompt里提取出来，只存到消息里
         const userMessage: Message = {
           id: Date.now().toString(),
           role: "user",
-          content: userPureInput, // 只存用户的提问，不存文件内容
+          content: userPureInput,
           timestamp: new Date(),
           fileAttachments:
-            fileAttachments.length > 0 ? fileAttachments : undefined, // 存文件元数据
+            fileAttachments.length > 0 ? fileAttachments : undefined,
         };
 
-        // 4. 创建AI空消息占位，标记为正在生成
         const aiMessageId = (Date.now() + 1).toString();
         const aiMessage: Message = {
           id: aiMessageId,
@@ -214,16 +222,15 @@ export const useChatStore = create<ChatStore>()(
           content: "",
           timestamp: new Date(),
           isStreaming: true,
-          isLatestMessage: true, // 标记为最新消息
+          isLatestMessage: true,
         };
 
-        // 5. 先把两条消息更新到Store，UI立刻渲染
         set((state) => ({
           conversations: state.conversations.map((conv) => {
             if (conv.id === state.activeConversationId) {
               const UpdatedMessages = conv.messages.map((msg) => ({
                 ...msg,
-                isLatestMessage: false, // 把之前的消息都标记为非最新
+                isLatestMessage: false,
               }));
               return {
                 ...conv,
@@ -234,13 +241,12 @@ export const useChatStore = create<ChatStore>()(
             return conv;
           }),
         }));
+
         if (isFirstMessage) {
           (async () => {
             try {
-              // 调用你写好的生成标题API，只用用户的纯提问生成
               const res = await generateChatTitle(userPureInput);
               const { title } = await res.json();
-              // 如果AI生成了有效标题，就更新会话标题
               if (title) {
                 set((state) => ({
                   conversations: state.conversations.map((conv) => {
@@ -251,14 +257,12 @@ export const useChatStore = create<ChatStore>()(
                   }),
                 }));
               }
-              // 生成失败的话，就保留之前的临时截取标题，兜底逻辑生效
             } catch (err) {
               console.error("自动生成标题失败", err);
-              // 出错不影响主功能，自动走兜底的临时标题
             }
           })();
         }
-        // 6. 调用 fetchStream
+
         await fetchStream(
           "/api/stream",
           {
@@ -267,7 +271,6 @@ export const useChatStore = create<ChatStore>()(
               .concat({ role: "user", content: content }),
             conversationId: currentConv.id,
           },
-          // 回调1：收到文字，正常追加（保持流式体验）
           (chunk) => {
             set((state) => ({
               conversations: state.conversations.map((conv) => {
@@ -286,7 +289,6 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 回调2：流完全结束，一次性设置 isStreaming 和 imageUrl
           (imageUrl) => {
             set((state) => ({
               currentStopFn: null,
@@ -296,11 +298,7 @@ export const useChatStore = create<ChatStore>()(
                     ...conv,
                     messages: conv.messages.map((msg) => {
                       if (msg.id === aiMessageId) {
-                        return {
-                          ...msg,
-                          isStreaming: false,
-                          imageUrl: imageUrl, // 🔥 在这里设置图片链接
-                        };
+                        return { ...msg, isStreaming: false, imageUrl };
                       }
                       return msg;
                     }),
@@ -310,38 +308,33 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 回调3：停止函数
           (stopFn) => {
             set({ currentStopFn: stopFn });
           },
         );
       },
-      // 重新生成AI回复
+
       regenerateMessage: async (messageId: string) => {
         const state = get();
-        // 边界判断
         if (!state.activeConversationId || state.currentStopFn) return;
         const currentConv = state.conversations.find(
           (c) => c.id === state.activeConversationId,
         );
         if (!currentConv) return;
 
-        // 1. 找到要重新生成的AI消息，以及它对应的上一条用户提问
         const messageIndex = currentConv.messages.findIndex(
           (msg) => msg.id === messageId,
         );
-        if (messageIndex < 1) return; // 第一条消息不可能是AI回复，直接返回
+        if (messageIndex < 1) return;
         const targetAiMessage = currentConv.messages[messageIndex];
         const targetUserMessage = currentConv.messages[messageIndex - 1];
 
-        // 只允许重新生成AI的回复，用户消息不能重新生成
         if (
           targetAiMessage.role !== "assistant" ||
           targetUserMessage.role !== "user"
         )
           return;
 
-        // 2. 先删除原来的AI消息，创建新的占位消息
         const newAiMessageId = Date.now().toString();
         const newAiMessage: Message = {
           id: newAiMessageId,
@@ -351,28 +344,25 @@ export const useChatStore = create<ChatStore>()(
           isStreaming: true,
         };
 
-        // 3. 更新store：删掉旧的AI消息，加入新的占位消息
         set((state) => ({
           conversations: state.conversations.map((conv) => {
             if (conv.id === state.activeConversationId) {
               const newMessages = [...conv.messages];
-              newMessages.splice(messageIndex, 1, newAiMessage); // 替换旧的AI消息
+              newMessages.splice(messageIndex, 1, newAiMessage);
               return { ...conv, messages: newMessages };
             }
             return conv;
           }),
         }));
 
-        // 4. 复用你现有的流式请求逻辑，重新发送用户的提问
         await fetchStream(
           "/api/stream",
           {
             messages: currentConv.messages
-              .slice(0, messageIndex - 1) // 取这条消息之前的所有对话历史
+              .slice(0, messageIndex - 1)
               .map((m) => ({ role: m.role, content: m.content }))
-              .concat({ role: "user", content: targetUserMessage.content }), // 重新发送用户的提问
+              .concat({ role: "user", content: targetUserMessage.content }),
           },
-          // 流式更新内容
           (chunk) => {
             set((state) => ({
               conversations: state.conversations.map((conv) => {
@@ -391,7 +381,6 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 流结束收尾
           () => {
             set((state) => ({
               currentStopFn: null,
@@ -411,21 +400,18 @@ export const useChatStore = create<ChatStore>()(
               }),
             }));
           },
-          // 保存停止函数
           (stopFn) => set({ currentStopFn: stopFn }),
         );
       },
 
-      // 切换选择批量删除模式
       toggleSelectionMode: () =>
         set((state) => ({
           isSelectionMode: !state.isSelectionMode,
           selectedMessageIds: !state.isSelectionMode
             ? []
-            : state.selectedMessageIds, // 开启时清空，关闭时也清空
+            : state.selectedMessageIds,
         })),
 
-      // 切换某条消息的选中状态
       toggleMessageSelection: (messageId: string) =>
         set((state) => ({
           selectedMessageIds: state.selectedMessageIds.includes(messageId)
@@ -433,11 +419,9 @@ export const useChatStore = create<ChatStore>()(
             : [...state.selectedMessageIds, messageId],
         })),
 
-      // 清空选中
       clearSelection: () =>
         set({ selectedMessageIds: [], isSelectionMode: false }),
 
-      // 批量删除选中的消息
       deleteSelectedMessages: async () => {
         const state = get();
         if (
@@ -445,7 +429,6 @@ export const useChatStore = create<ChatStore>()(
           state.selectedMessageIds.length === 0
         )
           return;
-
         set((state) => ({
           conversations: state.conversations.map((conv) => {
             if (conv.id === state.activeConversationId) {
@@ -458,54 +441,42 @@ export const useChatStore = create<ChatStore>()(
             }
             return conv;
           }),
-          // 删除后自动退出选择模式
           isSelectionMode: false,
           selectedMessageIds: [],
         }));
       },
     }),
-    // zustand数据持久化配置
     {
-      // 1. localStorage 的键名
       name: "ai-chat-conversations",
       storage: createJSONStorage(() => localStorage, {
-        // 存的时候：把 Date 转成 ISO 字符串
         replacer: (key, value) => {
-          // 加个类型检查，确保是 Date 类型再处理
           if ((key === "timestamp" || key === "createdAt") && value) {
-            // 先转成 any，或者用类型断言，让 TypeScript 放心
             return new Date(value as string | number | Date).toISOString();
           }
           return value;
         },
-        // 取的时候：把 ISO 字符串转回 Date 对象
         reviver: (key, value) => {
           if (
             (key === "timestamp" || key === "createdAt") &&
             typeof value === "string"
           ) {
-            // 这里我们已经检查了 value 是 string，所以可以直接传
             return new Date(value);
           }
           return value;
         },
       }),
-
-      // 只存需要的状态，排除临时的 currentStopFn
       partialize: (state) => ({
         conversations: state.conversations,
         activeConversationId: state.activeConversationId,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // 先把时间字符串转成 Date 对象 (如果需要的话)
           state.conversations.forEach((conv) => {
             conv.messages.forEach((msg) => {
               if (typeof msg.timestamp === "string")
                 msg.timestamp = new Date(msg.timestamp);
             });
           });
-          // 标记水合完成
           state.setHasHydrated(true);
         }
       },

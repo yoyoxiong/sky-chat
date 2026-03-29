@@ -1,24 +1,27 @@
+// src/types.ts
+// 保持你原有字段风格，只做微调确保前后端匹配
+
 // 定义单条消息的类型
 export interface Message {
-  id: string;
+  id: string; // 🔧 修正：你前端代码里用的是 Date.now().toString()，所以是 string
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  isStreaming?: boolean; // 标记是否正在流式生成
-  // 上传的文件附件元数据
+  isStreaming?: boolean;
   fileAttachments?: FileMeta[];
-  imageUrl?: string; // 生成的图片地址
-  isGeneratingImage?: boolean; // 标记是否正在生成图片
-  generateImageError?: string; // 图片生成失败的错误信息
-  isLatestMessage?: boolean; // 是否是当前会话的最新消息
+  imageUrl?: string;
+  isGeneratingImage?: boolean;
+  generateImageError?: string;
+  isLatestMessage?: boolean;
 }
 
 // 定义单个会话的类型
 export interface Conversation {
-  id: string;
+  id: number; // 🔧 修正：后端数据库是自增 number
   title: string;
-  messages: Message[]; // 会话里的消息列表
-  createdAt: Date;
+  messages: Message[];
+  createdAt: Date; // 🔧 修正：前端水合后会转成 Date 对象
+  userId?: number; // 补充：后端有这个字段，前端可选
 }
 
 // 文件元数据类型，全局通用
